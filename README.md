@@ -12,7 +12,6 @@ sortify-demo/
 └── .env               # your GEMINI_API_KEY (copy of env.example.txt)
 ```
 
-If `.env` didn't download (dotfiles are sometimes hidden), copy `env.example.txt` and rename it to `.env`.
 
 ## 1. Get a Gemini key
 
