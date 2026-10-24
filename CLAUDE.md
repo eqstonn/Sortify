@@ -75,6 +75,8 @@ requirements: fastapi, uvicorn, pydantic-settings, python-multipart, google-gena
 
 ## UI style (from the mockups)
 
+Mockups for every screen are in docs/mockups/ (01-home, 02-leaderboard, 03-profile, 04-camera, 05-scan-result, 06-10 wrapped cards). Look at the matching image before building a screen and match it closely.
+
 Soft mint/sage background, rounded white cards, deep green primary (#2E7D32-ish), bold rounded sans headings. Bottom tab bar: Home, Board, centre Scan button, Wrapped, Me. Result card uses the bin's colour (blue bin = blue). Scan camera has a framing guide and a Photo/Barcode toggle.
 
 ## How we build
