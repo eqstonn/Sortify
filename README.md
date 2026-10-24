@@ -1,53 +1,107 @@
-# Sortify scan demo
+# Sortify
 
-Point your camera at an item, tap **Scan item**, and Gemini tells you whether it's recyclable in Ottawa and which bin it goes in. The result shows on the page and prints in the terminal.
+Scan an item, find out which Ottawa bin it goes in, and earn points. Backend: FastAPI + Gemini + Supabase. App: Expo.
 
-## Files
-
-```
-sortify-demo/
-├── main.py            # FastAPI server, sends the photo to Gemini
-├── static/index.html  # camera page
-├── requirements.txt
-└── .env               # your GEMINI_API_KEY (copy of env.example.txt)
-```
-
-
-## 1. Get a Gemini key
-
-Go to https://aistudio.google.com/apikey, create a free key, and paste it into `.env`:
-
-```
-GEMINI_API_KEY=your-key-here
-```
-
-Don't commit `.env` to GitHub.
-
-## 2. Install and run
+## Run the backend
 
 ```bash
-cd sortify-demo
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+venv\Scripts\activate            # Mac/Linux: source venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --reload
+copy .env.example .env           # Mac/Linux: cp .env.example .env
 ```
 
-Open http://localhost:8000 on your laptop. The webcam works on localhost without https.
+Put your Gemini key in `.env`, then:
 
-## 3. Test on your phone (ngrok)
+```bash
+uvicorn app.main:app --reload
+```
 
-Phones only allow the camera on https pages, so use ngrok to get an https link:
+Open http://localhost:8000/docs to try every endpoint.
 
-1. Install ngrok from https://ngrok.com/download and sign up (free).
-2. Run `ngrok config add-authtoken <your-token>` once.
-3. Keep uvicorn running, and in a second terminal run `ngrok http 8000`.
-4. Open the `https://....ngrok-free.app` link it prints on your phone. Click through the ngrok warning page and allow camera access.
+## Run the tests
 
-If the live camera won't start, the "upload a photo" button opens the phone's camera app instead.
+```bash
+pytest
+```
 
-## Troubleshooting
+Tests fake Gemini and Supabase (`tests/fakes.py`), so they're free and work offline.
 
-- **"GEMINI_API_KEY is missing"**: the key isn't in `.env`, or you started uvicorn from a different folder. Run it from inside `sortify-demo`.
-- **Model not found**: Google renames models now and then. Add `GEMINI_MODEL=<model name>` to `.env` using a current Flash model from https://ai.google.dev/gemini-api/docs/models.
-- **429 / quota error**: you hit the free-tier rate limit. Wait a minute.
+## Layout
+
+```
+app/
+  main.py            app, CORS, /health
+  config.py          settings from .env
+  schemas.py         request/response shapes (the app's contract)
+  routers/           endpoints
+  services/rules.py  category -> Ottawa bin, points, tips, nearest drop-off
+  services/images.py shrink photos to 1024 px and strip EXIF (location)
+  services/gemini.py prompt + JSON schema; Gemini must pick a category id
+  services/points.py scoring, first-time bonus, same-photo check
+  db.py              the only code that talks to Supabase
+  deps.py            login token -> user id, or 401
+data/
+  categories.json    every item category Gemini can pick from
+  dropoff_sites.json e-waste, battery and hazardous drop-offs
+scripts/
+  eval_classifier.py accuracy check on real photos (see tests/eval_images/)
+  dev_token.py       login token for trying endpoints at /docs
+supabase/migrations/
+  001_init.sql       tables, row-level security, leaderboard views, award_points()
+tests/               pytest tests
+```
+
+## How a scan works
+
+1. The app uploads a photo to `POST /classify` (plus optional `lat`/`lon`).
+2. `images.py` shrinks it and strips EXIF, so no GPS location leaves the server.
+3. `gemini.py` asks Gemini to pick one category id from `data/categories.json` (enforced by a JSON schema). Made-up ids and confidence under 0.5 become `unknown`.
+4. `rules.py` looks up the bin, points and tips for that id. Gemini never decides the bin.
+5. For drop-off items (batteries, electronics, hazardous) the nearest site is added if a location was sent.
+
+## Checking accuracy
+
+Put real photos in `tests/eval_images/<category_id>/`, then:
+
+```bash
+python -m scripts.eval_classifier
+```
+
+It prints each result plus category accuracy and bin accuracy. This uses your real Gemini key.
+
+## Endpoints so far
+
+| Endpoint | What it does |
+| --- | --- |
+| `GET /health` | Returns `{"status": "ok"}` |
+| `GET /categories` | Every category with its bin, points and tips |
+| `GET /categories/{id}` | Where one category goes, e.g. `/categories/aluminum_can` |
+| `GET /dropoffs/nearest?lat=&lon=&accepts=` | Closest drop-off that takes `electronics`, `batteries` or `hazardous` |
+| `POST /classify` 🔒 | Form upload: `image` (photo), optional `lat`, `lon`. Saves a pending scan and returns item, bin, points, tips, `scan_id`, nearest drop-off |
+| `POST /scans/{id}/confirm` 🔒 | "I recycled it": awards points |
+| `POST /scans/{id}/correct` 🔒 | "Not right?": body `{"category_id": "...", "lat": .., "lon": ..}` |
+| `GET /scans/me` 🔒 | Your last 50 scans |
+
+🔒 needs `Authorization: Bearer <Supabase access token>`.
+
+## Set up Supabase (once)
+
+1. In the Supabase dashboard, open **SQL Editor**, paste all of `supabase/migrations/001_init.sql` and click **Run**.
+2. Put `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (Project Settings → API keys → secret / service_role) in `.env`.
+3. Anonymous sign-ins must be on (Authentication → Sign In / Providers).
+
+To try the 🔒 endpoints at `/docs`, run `python -m scripts.dev_token`, click **Authorize** and paste the token.
+
+## Points and anti-cheat
+
+- Points come from `data/categories.json` (rarer items are worth more), plus a +15 bonus the first time you sort a new kind of item.
+- Points are only given on confirm, and each scan can be confirmed once.
+- A corrected scan is worth at most 10 points, so relabelling junk as a battery doesn't pay.
+- The same photo (even resized) never earns points twice, for anyone. We compare perceptual hashes.
+- There's a daily cap (`DAILY_POINT_CAP`, default 200), counted in Ottawa time.
+- The confirm-once rule and the cap run inside the `award_points` database function in one transaction, so two taps at once can't cheat it. Only the backend can call that function.
+
+## Checking the Ottawa data
+
+Entries in `data/categories.json` and `data/dropoff_sites.json` with `"verify": true` still need someone to check them against ottawa.ca.

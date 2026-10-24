@@ -1,5 +1,11 @@
 fastapi
 uvicorn
+pydantic-settings
 python-multipart
 google-genai
-python-dotenv
+supabase
+pillow
+imagehash
+pytest
+httpx
+tzdata

@@ -1,0 +1,15 @@
+{
+  "_note": "Add more sites (e.g. electronics retailers that take e-waste back, battery drop-off boxes). Check every address and coordinate against ottawa.ca or Google Maps before the demo.",
+  "sites": [
+    {
+      "id": "trail_road",
+      "name": "Trail Road Waste Facility",
+      "address": "4475 Trail Road, Nepean, ON",
+      "lat": 45.2397,
+      "lon": -75.8031,
+      "accepts": ["electronics", "batteries", "hazardous"],
+      "notes": "City of Ottawa facility. Check ottawa.ca for which items it accepts and on which days. Coordinates are approximate.",
+      "verify": true
+    }
+  ]
+}

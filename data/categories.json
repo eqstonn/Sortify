@@ -1,0 +1,574 @@
+{
+  "_note": "Ottawa curbside rules. Entries with verify=true still need a teammate to check against ottawa.ca.",
+  "categories": [
+    {
+      "id": "aluminum_can",
+      "name": "Aluminum can",
+      "material": "metal",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.015,
+      "tips": [
+        "Empty it and give it a quick rinse",
+        "Put it in loose, not inside a bag"
+      ],
+      "examples": [
+        "pop can",
+        "beer can",
+        "sparkling water can"
+      ],
+      "verify": false
+    },
+    {
+      "id": "steel_food_can",
+      "name": "Food can",
+      "material": "metal",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.06,
+      "tips": [
+        "Rinse out food",
+        "Put the lid inside the can and pinch it closed"
+      ],
+      "examples": [
+        "soup can",
+        "bean can",
+        "tuna can"
+      ],
+      "verify": false
+    },
+    {
+      "id": "aluminum_foil_tray",
+      "name": "Aluminum foil or tray",
+      "material": "metal",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.02,
+      "tips": [
+        "Scrape off food",
+        "Scrunch foil into a ball bigger than a fist"
+      ],
+      "examples": [
+        "foil pie plate",
+        "takeout foil tray",
+        "clean foil"
+      ],
+      "verify": false
+    },
+    {
+      "id": "aerosol_can",
+      "name": "Empty aerosol can",
+      "material": "metal",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 12,
+      "rarity": "uncommon",
+      "kg_estimate": 0.08,
+      "tips": [
+        "Only if completely empty",
+        "Remove the plastic cap and put it in the blue bin too"
+      ],
+      "examples": [
+        "hairspray can",
+        "whipped cream can",
+        "air freshener"
+      ],
+      "verify": true
+    },
+    {
+      "id": "glass_bottle_jar",
+      "name": "Glass bottle or jar",
+      "material": "glass",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 12,
+      "rarity": "common",
+      "kg_estimate": 0.3,
+      "tips": [
+        "Empty and rinse",
+        "Leave labels on; put lids in separately"
+      ],
+      "examples": [
+        "pasta sauce jar",
+        "wine bottle",
+        "jam jar"
+      ],
+      "verify": false
+    },
+    {
+      "id": "plastic_bottle",
+      "name": "Plastic bottle",
+      "material": "plastic",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.025,
+      "tips": [
+        "Empty it",
+        "Put the cap back on"
+      ],
+      "examples": [
+        "water bottle",
+        "pop bottle",
+        "shampoo bottle"
+      ],
+      "verify": false
+    },
+    {
+      "id": "plastic_container",
+      "name": "Plastic tub or container",
+      "material": "plastic",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.03,
+      "tips": [
+        "Rinse out food",
+        "Lids can go in the blue bin too"
+      ],
+      "examples": [
+        "yogurt tub",
+        "clamshell berry container",
+        "takeout container"
+      ],
+      "verify": false
+    },
+    {
+      "id": "plastic_jug",
+      "name": "Plastic jug",
+      "material": "plastic",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.08,
+      "tips": [
+        "Empty and rinse",
+        "Put the cap back on"
+      ],
+      "examples": [
+        "milk jug",
+        "laundry detergent jug",
+        "juice jug"
+      ],
+      "verify": false
+    },
+    {
+      "id": "carton",
+      "name": "Milk or juice carton",
+      "material": "paper",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.04,
+      "tips": [
+        "Empty and rinse",
+        "Flatten it if you can"
+      ],
+      "examples": [
+        "milk carton",
+        "juice carton",
+        "broth carton"
+      ],
+      "verify": false
+    },
+    {
+      "id": "drink_box",
+      "name": "Drink box",
+      "material": "paper",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.03,
+      "tips": [
+        "Empty it",
+        "Push the straw inside the box"
+      ],
+      "examples": [
+        "juice box",
+        "Tetra Pak"
+      ],
+      "verify": false
+    },
+    {
+      "id": "paper",
+      "name": "Paper",
+      "material": "paper",
+      "bin": "black_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.05,
+      "tips": [
+        "Keep it dry",
+        "Shredded paper goes in a clear plastic bag"
+      ],
+      "examples": [
+        "printer paper",
+        "newspaper",
+        "flyers",
+        "envelopes"
+      ],
+      "verify": false
+    },
+    {
+      "id": "cardboard",
+      "name": "Cardboard box",
+      "material": "paper",
+      "bin": "black_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.3,
+      "tips": [
+        "Flatten it",
+        "Bundle big boxes, no larger than 75 x 75 x 20 cm"
+      ],
+      "examples": [
+        "shipping box",
+        "moving box"
+      ],
+      "verify": true
+    },
+    {
+      "id": "boxboard",
+      "name": "Boxboard",
+      "material": "paper",
+      "bin": "black_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.1,
+      "tips": [
+        "Flatten it",
+        "Remove any plastic liner"
+      ],
+      "examples": [
+        "cereal box",
+        "tissue box",
+        "shoe box"
+      ],
+      "verify": false
+    },
+    {
+      "id": "paper_bag",
+      "name": "Paper bag",
+      "material": "paper",
+      "bin": "black_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.05,
+      "tips": [
+        "Empty it",
+        "Can be used to hold other paper"
+      ],
+      "examples": [
+        "grocery paper bag",
+        "takeout paper bag"
+      ],
+      "verify": false
+    },
+    {
+      "id": "plastic_bag_film",
+      "name": "Plastic bag or film",
+      "material": "plastic",
+      "bin": "black_bin",
+      "dropoff_type": null,
+      "points": 12,
+      "rarity": "uncommon",
+      "kg_estimate": 0.01,
+      "tips": [
+        "Must be clean and dry",
+        "Stuff all bags into one bag and tie it"
+      ],
+      "examples": [
+        "grocery bag",
+        "bread bag",
+        "bubble wrap"
+      ],
+      "verify": true
+    },
+    {
+      "id": "food_scraps",
+      "name": "Food scraps",
+      "material": "organic",
+      "bin": "green_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.2,
+      "tips": [
+        "No need to rinse anything",
+        "Plastic bags are OK as liners"
+      ],
+      "examples": [
+        "fruit peels",
+        "leftovers",
+        "bones",
+        "egg shells"
+      ],
+      "verify": false
+    },
+    {
+      "id": "soiled_paper",
+      "name": "Soiled paper",
+      "material": "organic",
+      "bin": "green_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.02,
+      "tips": [
+        "Paper with food or grease on it goes here"
+      ],
+      "examples": [
+        "used napkin",
+        "paper towel",
+        "paper plate"
+      ],
+      "verify": false
+    },
+    {
+      "id": "greasy_pizza_box",
+      "name": "Greasy pizza box",
+      "material": "organic",
+      "bin": "green_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.25,
+      "tips": [
+        "Greasy parts go in the green bin",
+        "Clean parts can go in the black bin"
+      ],
+      "examples": [
+        "pizza box"
+      ],
+      "verify": false
+    },
+    {
+      "id": "coffee_grounds_tea",
+      "name": "Coffee grounds or tea bag",
+      "material": "organic",
+      "bin": "green_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.03,
+      "tips": [
+        "Paper filters can go in too"
+      ],
+      "examples": [
+        "coffee grounds",
+        "tea bag",
+        "coffee filter"
+      ],
+      "verify": false
+    },
+    {
+      "id": "chip_bag",
+      "name": "Chip or snack bag",
+      "material": "plastic",
+      "bin": "garbage",
+      "dropoff_type": null,
+      "points": 2,
+      "rarity": "common",
+      "kg_estimate": 0.01,
+      "tips": [
+        "Not recyclable; put it in the garbage"
+      ],
+      "examples": [
+        "chip bag",
+        "candy wrapper",
+        "granola bar wrapper"
+      ],
+      "verify": false
+    },
+    {
+      "id": "polystyrene_foam",
+      "name": "Styrofoam",
+      "material": "plastic",
+      "bin": "garbage",
+      "dropoff_type": null,
+      "points": 2,
+      "rarity": "common",
+      "kg_estimate": 0.02,
+      "tips": [
+        "Not accepted at the curb; put it in the garbage"
+      ],
+      "examples": [
+        "foam cup",
+        "foam takeout tray",
+        "packing foam"
+      ],
+      "verify": true
+    },
+    {
+      "id": "coffee_cup",
+      "name": "Paper coffee cup",
+      "material": "paper",
+      "bin": "garbage",
+      "dropoff_type": null,
+      "points": 2,
+      "rarity": "common",
+      "kg_estimate": 0.015,
+      "tips": [
+        "Put the plastic lid in the blue bin"
+      ],
+      "examples": [
+        "takeout coffee cup",
+        "paper cup"
+      ],
+      "verify": true
+    },
+    {
+      "id": "plastic_cutlery_straw",
+      "name": "Plastic cutlery or straw",
+      "material": "plastic",
+      "bin": "garbage",
+      "dropoff_type": null,
+      "points": 2,
+      "rarity": "common",
+      "kg_estimate": 0.005,
+      "tips": [
+        "Too small to sort; put it in the garbage"
+      ],
+      "examples": [
+        "plastic fork",
+        "straw",
+        "stir stick"
+      ],
+      "verify": false
+    },
+    {
+      "id": "broken_glass_ceramic",
+      "name": "Drinking glass or ceramic",
+      "material": "glass",
+      "bin": "garbage",
+      "dropoff_type": null,
+      "points": 2,
+      "rarity": "uncommon",
+      "kg_estimate": 0.3,
+      "tips": [
+        "Wrap broken pieces before putting them in the garbage",
+        "Drinking glasses and dishes are not blue bin glass"
+      ],
+      "examples": [
+        "broken mug",
+        "drinking glass",
+        "plate"
+      ],
+      "verify": false
+    },
+    {
+      "id": "battery",
+      "name": "Battery",
+      "material": "hazardous",
+      "bin": "dropoff",
+      "dropoff_type": "batteries",
+      "points": 40,
+      "rarity": "rare",
+      "kg_estimate": 0.03,
+      "tips": [
+        "Never put batteries in any bin; they can start fires",
+        "Tape the ends of lithium batteries before dropping off"
+      ],
+      "examples": [
+        "AA battery",
+        "laptop battery",
+        "phone battery"
+      ],
+      "verify": false
+    },
+    {
+      "id": "electronics",
+      "name": "Electronics",
+      "material": "electronics",
+      "bin": "dropoff",
+      "dropoff_type": "electronics",
+      "points": 30,
+      "rarity": "rare",
+      "kg_estimate": 1.0,
+      "tips": [
+        "Wipe your data first",
+        "Many electronics stores take these back for free"
+      ],
+      "examples": [
+        "old phone",
+        "charger",
+        "cable",
+        "keyboard",
+        "laptop"
+      ],
+      "verify": false
+    },
+    {
+      "id": "light_bulb",
+      "name": "Fluorescent bulb (CFL)",
+      "material": "hazardous",
+      "bin": "dropoff",
+      "dropoff_type": "hazardous",
+      "points": 35,
+      "rarity": "rare",
+      "kg_estimate": 0.1,
+      "tips": [
+        "Contains mercury; don't break it",
+        "Take it to a hazardous waste drop-off"
+      ],
+      "examples": [
+        "CFL bulb",
+        "fluorescent tube"
+      ],
+      "verify": true
+    },
+    {
+      "id": "paint_chemical",
+      "name": "Paint or household chemical",
+      "material": "hazardous",
+      "bin": "dropoff",
+      "dropoff_type": "hazardous",
+      "points": 35,
+      "rarity": "rare",
+      "kg_estimate": 1.0,
+      "tips": [
+        "Keep it in its original container with the lid on"
+      ],
+      "examples": [
+        "paint can",
+        "motor oil",
+        "pesticide"
+      ],
+      "verify": false
+    },
+    {
+      "id": "propane_tank",
+      "name": "Propane tank",
+      "material": "hazardous",
+      "bin": "dropoff",
+      "dropoff_type": "hazardous",
+      "points": 40,
+      "rarity": "rare",
+      "kg_estimate": 5.0,
+      "tips": [
+        "Never put it in any bin",
+        "Many retailers exchange used tanks"
+      ],
+      "examples": [
+        "BBQ propane tank",
+        "camping cylinder"
+      ],
+      "verify": false
+    }
+  ]
+}

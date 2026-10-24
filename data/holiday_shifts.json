@@ -1,0 +1,16 @@
+{
+  "_rule": "When a holiday falls on a weekday, pickup on that day and the rest of that week moves one day later. Check dates against the City of Ottawa collection calendar (ottawa.ca or the Ottawa Collection Calendar app).",
+  "holidays": [
+    { "date": "2026-10-12", "name": "Thanksgiving", "verify": true },
+    { "date": "2026-12-25", "name": "Christmas Day", "verify": true },
+    { "date": "2027-01-01", "name": "New Year's Day", "verify": true },
+    { "date": "2027-02-15", "name": "Family Day", "verify": true },
+    { "date": "2027-03-26", "name": "Good Friday", "verify": true },
+    { "date": "2027-05-24", "name": "Victoria Day", "verify": true },
+    { "date": "2027-07-01", "name": "Canada Day", "verify": true },
+    { "date": "2027-09-06", "name": "Labour Day", "verify": true },
+    { "date": "2027-10-11", "name": "Thanksgiving", "verify": true },
+    { "date": "2027-12-27", "name": "Christmas Day (observed)", "verify": true },
+    { "date": "2027-12-28", "name": "Boxing Day (observed)", "verify": true }
+  ]
+}
