@@ -13,7 +13,8 @@ from supabase import ClientOptions, create_client
 from app.config import load_settings
 
 
-def main() -> None:
+def new_player_token() -> tuple[str, str]:
+    """Signs in a brand-new anonymous player. Returns (user id, access token)."""
     settings = load_settings()
     if not settings.supabase_url or not settings.supabase_service_key:
         raise SystemExit("Add SUPABASE_URL and SUPABASE_SERVICE_KEY to .env first.")
@@ -24,8 +25,13 @@ def main() -> None:
         options=ClientOptions(auto_refresh_token=False, persist_session=False),
     )
     res = client.auth.sign_in_anonymously()
-    print(f"User id: {res.user.id}\n")
-    print(res.session.access_token)
+    return res.user.id, res.session.access_token
+
+
+def main() -> None:
+    user_id, token = new_player_token()
+    print(f"User id: {user_id}\n")
+    print(token)
 
 
 if __name__ == "__main__":

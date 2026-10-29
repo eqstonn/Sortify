@@ -13,6 +13,7 @@ class FakeDB:
         self.profiles: dict[str, dict] = {}
         self.scans: dict[str, dict] = {}
         self.badges: dict[tuple[str, str], datetime] = {}  # (user id, badge id) -> earned at
+        self.emails: dict[str, str] = {}  # user id -> email, for logins made by find_or_create_user
 
     def add_user(self, user_id: str, token: str, name: str = "Recycler") -> dict:
         """Like a player signing in anonymously. Returns headers for that player."""
@@ -150,6 +151,33 @@ class FakeDB:
                 "points": pts, "rank": rank, "items": items[uid],
             })
         return rows
+
+    # ---------- demo players (scripts/seed.py) ----------
+
+    def find_user(self, email):
+        return next((uid for uid, known in self.emails.items() if known == email), None)
+
+    def create_user(self, email):
+        uid = str(uuid.uuid4())
+        self.emails[uid] = email
+        self.add_user(uid, token=f"token-{uid}")  # like the on_auth_user_created trigger
+        return uid
+
+    def delete_user(self, user_id):
+        self.emails.pop(user_id, None)
+        self.profiles.pop(user_id, None)
+        self.delete_scans(user_id)
+        self.delete_badges(user_id)
+
+    def delete_scans(self, user_id):
+        self.scans = {sid: s for sid, s in self.scans.items() if s["user_id"] != user_id}
+
+    def delete_badges(self, user_id):
+        self.badges = {key: at for key, at in self.badges.items() if key[0] != user_id}
+
+    def insert_scans(self, rows):
+        for row in rows:
+            self.insert_scan(row)
 
     # ---------- test helpers ----------
 

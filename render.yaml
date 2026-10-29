@@ -1,0 +1,32 @@
+# Render Blueprint: the Sortify FastAPI backend on Render's free plan.
+# In Render: New → Blueprint → pick this repo. It asks for the three values
+# marked `sync: false` (copy them from your .env). Steps are in README.md.
+#
+# Free plan: the service sleeps after 15 minutes without requests and takes
+# about a minute to wake up. Open /health a few minutes before a demo.
+
+services:
+  - type: web
+    name: sortify-api
+    runtime: python
+    plan: free
+    region: ohio # closest Render region to Ottawa
+    branch: main
+    autoDeploy: true # redeploys on every push to main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.15 # same as our venv
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: DAILY_POINT_CAP
+        value: "200"
+      # Secrets: Render asks for these when you create the Blueprint. Never commit them.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false

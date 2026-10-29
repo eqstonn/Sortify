@@ -208,6 +208,42 @@ class Database:
             raise ScanNotPending(str(data))
         return data
 
+    # ---------- demo players (scripts/seed.py) ----------
+
+    def find_user(self, email: str) -> str | None:
+        """The id of the login with this email, or None."""
+        page = 1
+        while True:
+            users = self.client.auth.admin.list_users(page=page, per_page=1000)
+            for user in users:
+                if user.email == email:
+                    return user.id
+            if len(users) < 1000:
+                return None
+            page += 1
+
+    def create_user(self, email: str) -> str:
+        """A login with this email (already confirmed, so no email is sent). The
+        on_auth_user_created trigger in 001_init.sql gives it a profile."""
+        res = self.client.auth.admin.create_user({"email": email, "email_confirm": True})
+        return res.user.id
+
+    def delete_user(self, user_id: str) -> None:
+        """Deletes the login; its profile, scans and badges go with it (on delete cascade)."""
+        self.client.auth.admin.delete_user(user_id)
+
+    def delete_scans(self, user_id: str) -> None:
+        self.client.table("scans").delete().eq("user_id", user_id).execute()
+
+    def delete_badges(self, user_id: str) -> None:
+        self.client.table("badges").delete().eq("user_id", user_id).execute()
+
+    def insert_scans(self, rows: list[dict]) -> None:
+        """Many scans, 500 per request (much faster than insert_scan in a loop)."""
+        rows = [{k: v.isoformat() if isinstance(v, datetime) else v for k, v in r.items()} for r in rows]
+        for i in range(0, len(rows), 500):
+            self.client.table("scans").insert(rows[i : i + 500]).execute()
+
 
 @lru_cache
 def _connect(url: str, key: str) -> Database:

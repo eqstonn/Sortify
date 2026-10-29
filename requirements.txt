@@ -1,11 +1,12 @@
-fastapi
-uvicorn
-pydantic-settings
-python-multipart
-google-genai
-supabase
-pillow
-imagehash
-pytest
-httpx
-tzdata
+# Pinned to the versions we test with, so a Render build matches your laptop.
+fastapi==0.162.0
+uvicorn==0.54.0
+pydantic-settings==2.16.1
+python-multipart==0.0.32
+google-genai==2.33.0
+supabase==2.33.0
+pillow==13.0.0
+imagehash==4.3.2
+pytest==9.1.1
+httpx==0.28.1
+tzdata==2026.5
