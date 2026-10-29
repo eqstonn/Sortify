@@ -93,7 +93,7 @@ Full plan with files and tests per phase: docs/BUILD_PLAN.md (read it before sta
 - [x] Phase 3: Supabase auth, scans, points with anti-cheat (`app/db.py`, `app/deps.py`, `app/services/points.py`, `app/routers/scans.py`, `supabase/migrations/001_init.sql`, `scripts/dev_token.py`). Tests use `tests/fakes.py:FakeDB`.
 - [x] Phase 4: leaderboard, profile, levels, pickup schedule (`app/routers/leaderboard.py`, `profile.py`, `schedule.py`, `app/services/levels.py`, `stats.py`, `schedule.py`, `clock.py`, `data/holiday_shifts.json`, `supabase/migrations/002_schedule.sql`). Leaderboard views live in `001_init.sql`. All days/weeks/streaks use Ottawa time via `clock.py` (needs `tzdata` on Windows); tests pin `clock.today`.
 - [ ] Phase 5: Expo app in `mobile/`
-- [ ] Phase 6: Wrapped, Discover weekly, badges
+- [x] Phase 6: Wrapped, Discover weekly, badges (`app/services/wrapped.py`, `discover.py`, `badges.py`, `app/routers/wrapped.py`, `discover.py`, `data/discover_weekly.json`, `supabase/migrations/003_badges.sql`, `scripts/dev_seed_month.py`; app: `mobile/app/(tabs)/wrapped.tsx` + `components/WrappedStory.tsx`, `components/DiscoverCard.tsx` on Home, badges on `me.tsx`). Months and weeks use Ottawa time; a streak that crosses a month counts in full in both months' Wrapped.
 - [ ] Phase 7: seed data, Render deploy, demo prep
 
 Code lives in `app/` (routers in `app/routers/`, services in `app/services/`), data in `data/`, tests in `tests/`. Every phase ships with pytest tests; Gemini and Supabase are faked in tests. Run `pytest` before committing.

@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.db import Database, ScanNotPending, get_db
 from app.deps import get_current_user
 from app.schemas import ClassifyResult, ConfirmResult, CorrectIn, ScanOut, ScanStatus
-from app.services import points, rules
+from app.services import badges, clock, discover, points, rules
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -44,7 +44,8 @@ def confirm(
     duplicate = bool(scan["image_hash"]) and points.is_duplicate(
         scan["image_hash"], db.recent_confirmed_hashes()
     )
-    wanted = 0 if duplicate else points.points_for(category_id, corrected, first_time)
+    bonus = 0 if duplicate else discover.bonus_for(category_id, corrected, db.confirmed_scans(user_id), clock.today())
+    wanted = 0 if duplicate else points.points_for(category_id, corrected, first_time) + bonus
 
     try:
         result = db.award_points(
@@ -59,8 +60,16 @@ def confirm(
         notes.append("This photo was already used for points, so none this time. Thanks for sorting it!")
     elif result["awarded"] < wanted:
         notes.append(f"You've hit today's limit of {get_settings().daily_point_cap} points. Come back tomorrow!")
-    elif first_time and not corrected:
-        notes.append(f"+{points.FIRST_CATEGORY_BONUS} bonus for your first {rules.get_disposal(category_id).name.lower()}!")
+    else:
+        if first_time and not corrected:
+            notes.append(f"+{points.FIRST_CATEGORY_BONUS} bonus for your first {rules.get_disposal(category_id).name.lower()}!")
+        if bonus:
+            notes.append(f"+{bonus} Discover weekly bonus. You found this week's tricky item!")
+
+    # Badges come from all confirmed scans, including this one
+    new_badges = badges.new_badges(db.confirmed_scans(user_id), set(db.earned_badges(user_id)))
+    db.add_badges(user_id, new_badges)
+    notes += [f"New badge: {badges.BY_ID[b].name}!" for b in new_badges]
 
     return ConfirmResult(
         scan_id=str(scan_id),
@@ -68,6 +77,7 @@ def confirm(
         points_awarded=result["awarded"],
         total_points=result["total_points"],
         notes=notes,
+        new_badges=new_badges,
     )
 
 

@@ -28,13 +28,15 @@ export const binColors: Record<Bin, string> = {
   unsure: "#8A938C",
 };
 
-// "What you sort" bars
+// "What you sort" bars, keyed by the backend's material id (lib/materials.ts has the labels)
 export const materialColors: Record<string, string> = {
   plastic: "#2563A6",
   paper: "#4F6356",
   metal: "#2F7D4F",
   glass: "#5FAE74",
-  "e-waste": "#C46A45",
+  electronics: "#C46A45",
+  hazardous: "#B3541E",
+  organic: "#8A6D3B",
 };
 
 // Manrope is the closest Google font to the mockups' bold rounded sans.

@@ -7,8 +7,16 @@ import pytest
 
 from app.config import load_settings
 from app.main import create_app
-from app.services import gemini
+from app.schemas import DiscoverItem
+from app.services import discover, gemini
 from tests.conftest import make_photo
+
+
+@pytest.fixture(autouse=True)
+def no_discover_bonus(monkeypatch):
+    """Discover weekly changes every week; keep it out of these tests' point math (see test_discover.py)."""
+    unused = DiscoverItem(category_id="coffee_grounds_tea", item="Tea bag", bonus_points=20, explainer="")
+    monkeypatch.setattr(discover, "current", lambda today: unused)
 
 
 @pytest.fixture
@@ -190,7 +198,7 @@ def test_correct_changes_bin_and_caps_points(client, db, auth, scan):
     body = confirm(client, scan_id, auth).json()
     assert body["category_id"] == "battery"
     assert body["points_awarded"] == 10
-    assert body["notes"] == []
+    assert not any("bonus" in note for note in body["notes"])
 
 
 def test_correct_unknown_scan_then_confirm(client, auth, scan):

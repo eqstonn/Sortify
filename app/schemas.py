@@ -114,6 +114,7 @@ class ConfirmResult(BaseModel):
     points_awarded: int
     total_points: int
     notes: list[str]  # e.g. "+15 first-time bonus", "daily limit reached"
+    new_badges: list[str] = []  # badge ids earned by this scan, e.g. ["first_sort"]
 
 
 # ---------- leaderboard ----------
@@ -191,6 +192,16 @@ class Schedule(BaseModel):
     blue_week_of: date  # the Monday of a week when the blue bin went out
 
 
+class BadgeOut(BaseModel):
+    """One badge on the Me screen, earned or still locked."""
+
+    id: str
+    name: str
+    description: str
+    earned: bool
+    earned_at: datetime | None = None
+
+
 class ProfileOut(BaseModel):
     """Response of GET /me and PATCH /me: the Home and Me screens."""
 
@@ -207,6 +218,7 @@ class ProfileOut(BaseModel):
     rank: int | None  # all-time Ottawa rank; None until you score
     breakdown: list[MaterialShare]  # most-sorted material first
     schedule: Schedule | None  # None until PUT /me/schedule
+    badges: list[BadgeOut]  # every badge, earned ones first
 
 
 class ProfileUpdate(BaseModel):
@@ -241,3 +253,77 @@ class NextPickup(BaseModel):
     bins: list[Bin]  # e.g. ["black_bin", "green_bin"]
     label: str  # e.g. "Black + green bin · Tue, Oct 27"
     holiday: str | None = None  # set when a holiday moved this pickup
+
+
+# ---------- Sortify Wrapped ----------
+
+
+class MaterialCount(BaseModel):
+    """One row of the Wrapped "top material" card."""
+
+    material: str
+    count: int
+    top_items: list[str]  # most-sorted category names in this material, up to 2
+
+
+class RarestFind(BaseModel):
+    category_id: str
+    name: str  # category name, e.g. "Battery"
+    item: str  # what Gemini saw, e.g. "old laptop battery"
+    material: str
+    bin: Bin
+    rarity: str
+    percent_of_players: int  # share of this month's players who sorted one too
+
+
+class TopRecycler(BaseModel):
+    user_id: str
+    name: str
+    avatar: str
+    points: int  # this month
+    is_me: bool
+
+
+class WrappedOut(BaseModel):
+    """Response of GET /wrapped/{year}/{month}: data for the 5 Wrapped cards."""
+
+    year: int
+    month: int
+    items: int
+    kg: float
+    average_kg: float  # per player who sorted anything this month
+    points: int
+    top_materials: list[MaterialCount]  # top 5, most sorted first
+    rarest_find: RarestFind | None
+    rank: int | None  # by points this month; None if you scored nothing
+    players: int  # players who sorted something this month
+    top_recycler: TopRecycler | None
+    busiest_day: str | None  # weekday you sorted most, e.g. "sunday"
+    longest_streak: int  # longest run of days that touches this month, counted in full
+
+
+# ---------- Discover weekly ----------
+
+
+class DiscoverItem(BaseModel):
+    """One entry in data/discover_weekly.json."""
+
+    category_id: str
+    item: str  # e.g. "Greasy pizza box"
+    bonus_points: int = Field(gt=0)
+    explainer: str
+
+
+class DiscoverOut(BaseModel):
+    """Response of GET /discover/current."""
+
+    week_of: date  # Monday
+    ends_on: date  # Sunday
+    category_id: str
+    item: str
+    name: str  # category name
+    bin: Bin
+    bonus_points: int
+    explainer: str
+    tips: list[str]
+    found: bool  # you already sorted it this week (the bonus is used)

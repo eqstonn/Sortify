@@ -24,6 +24,7 @@ jest.mock("@/lib/api", () => {
       nextPickup: jest.fn(),
       health: jest.fn(),
       me: jest.fn(),
+      discoverCurrent: jest.fn(async () => null),
     },
   };
 });

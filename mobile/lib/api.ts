@@ -95,6 +95,7 @@ export interface ConfirmResult {
   points_awarded: number;
   total_points: number;
   notes: string[]; // e.g. "+15 bonus for your first aluminum can!"
+  new_badges?: string[]; // badge ids this scan earned, e.g. ["first_sort"]
 }
 
 export interface LeaderboardEntry {
@@ -133,6 +134,14 @@ export interface Schedule {
   blue_week_of: string;
 }
 
+export interface BadgeOut {
+  id: string; // "first_sort", "ewaste_hero", "streak_7", "glass_master"
+  name: string;
+  description: string;
+  earned: boolean;
+  earned_at: string | null;
+}
+
 export interface ProfileOut {
   id: string;
   name: string;
@@ -147,6 +156,7 @@ export interface ProfileOut {
   rank: number | null; // null until you score
   breakdown: MaterialShare[]; // most-sorted first
   schedule: Schedule | null;
+  badges: BadgeOut[]; // every badge, earned ones first
 }
 
 export interface ProfileUpdate {
@@ -165,6 +175,61 @@ export interface NextPickup {
   bins: Bin[];
   label: string; // "Black + green bin · Tue, Oct 27"
   holiday: string | null;
+}
+
+export interface MaterialCount {
+  material: string;
+  count: number;
+  top_items: string[]; // most-sorted category names in this material, up to 2
+}
+
+export interface RarestFind {
+  category_id: string;
+  name: string; // category name, e.g. "Battery"
+  item: string; // what Gemini saw, e.g. "old laptop battery"
+  material: string;
+  bin: Bin;
+  rarity: Rarity;
+  percent_of_players: number;
+}
+
+export interface TopRecycler {
+  user_id: string;
+  name: string;
+  avatar: string;
+  points: number; // this month
+  is_me: boolean;
+}
+
+/** GET /wrapped/{year}/{month}: data for the 5 Wrapped cards. */
+export interface WrappedOut {
+  year: number;
+  month: number; // 1 to 12
+  items: number;
+  kg: number;
+  average_kg: number; // per player who sorted anything this month
+  points: number;
+  top_materials: MaterialCount[]; // top 5
+  rarest_find: RarestFind | null;
+  rank: number | null; // null if you scored nothing this month
+  players: number;
+  top_recycler: TopRecycler | null;
+  busiest_day: string | null; // "sunday"
+  longest_streak: number;
+}
+
+/** GET /discover/current: this week's tricky item. */
+export interface DiscoverOut {
+  week_of: string; // Monday
+  ends_on: string; // Sunday
+  category_id: string;
+  item: string; // "Greasy pizza box"
+  name: string;
+  bin: Bin;
+  bonus_points: number;
+  explainer: string;
+  tips: string[];
+  found: boolean; // already sorted this week, bonus used
 }
 
 // ---------- errors ----------
@@ -284,4 +349,9 @@ export const api = {
   },
 
   setSchedule: (body: ScheduleIn) => request<NextPickup>("/me/schedule", { method: "PUT", body }),
+
+  /** month is 1 to 12 */
+  wrapped: (year: number, month: number) => request<WrappedOut>(`/wrapped/${year}/${month}`),
+
+  discoverCurrent: () => request<DiscoverOut>("/discover/current"),
 };

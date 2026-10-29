@@ -12,6 +12,7 @@ class FakeDB:
         self.tokens: dict[str, str] = {}  # login token -> user id
         self.profiles: dict[str, dict] = {}
         self.scans: dict[str, dict] = {}
+        self.badges: dict[tuple[str, str], datetime] = {}  # (user id, badge id) -> earned at
 
     def add_user(self, user_id: str, token: str, name: str = "Recycler") -> dict:
         """Like a player signing in anonymously. Returns headers for that player."""
@@ -73,6 +74,20 @@ class FakeDB:
     def confirmed_scans(self, user_id):
         mine = [dict(s) for s in self.scans.values() if s["user_id"] == user_id and s["status"] == "confirmed"]
         return sorted(mine, key=lambda s: s["confirmed_at"], reverse=True)
+
+    def scans_between(self, start, end):
+        rows = [
+            dict(s) for s in self.scans.values()
+            if s["status"] == "confirmed" and start <= s["confirmed_at"] < end
+        ]
+        return sorted(rows, key=lambda s: s["confirmed_at"])
+
+    def earned_badges(self, user_id):
+        return {badge: at for (uid, badge), at in self.badges.items() if uid == user_id}
+
+    def add_badges(self, user_id, badge_ids):
+        for badge in badge_ids:
+            self.badges.setdefault((user_id, badge), datetime.now(timezone.utc))
 
     def get_profile(self, user_id):
         profile = self.profiles.get(user_id)
@@ -136,9 +151,9 @@ class FakeDB:
     def backdate_confirmed(self, scan_id, days):
         self.scans[scan_id]["confirmed_at"] -= timedelta(days=days)
 
-    def add_confirmed_scan(self, user_id, category_id, points_awarded=10, when=None, kg=0.1):
+    def add_confirmed_scan(self, user_id, category_id, points_awarded=10, when=None, kg=0.1, item=None):
         """A scan that was already confirmed (at `when`, default now), with the profile updated to match."""
-        scan = self.insert_scan({"user_id": user_id, "category_id": category_id, "item": category_id})
+        scan = self.insert_scan({"user_id": user_id, "category_id": category_id, "item": item or category_id})
         scan_row = self.scans[scan["id"]]
         scan_row.update(
             status="confirmed",

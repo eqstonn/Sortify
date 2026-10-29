@@ -1,0 +1,54 @@
+{
+  "_note": "Discover weekly: one tricky item a week, in this order, starting the Monday in first_week, then back to the top. category_id must be in categories.json; the bin and tips come from there.",
+  "first_week": "2026-10-26",
+  "items": [
+    {
+      "category_id": "greasy_pizza_box",
+      "item": "Greasy pizza box",
+      "bonus_points": 20,
+      "explainer": "Grease ruins paper recycling, so the greasy parts go in the green bin, not the black bin. Tear off a clean lid and that part can go in the black bin."
+    },
+    {
+      "category_id": "coffee_cup",
+      "item": "Takeout coffee cup",
+      "bonus_points": 20,
+      "explainer": "It looks like paper, but the plastic lining inside means the cup goes in the garbage. The plastic lid can go in the blue bin."
+    },
+    {
+      "category_id": "plastic_bag_film",
+      "item": "Plastic grocery bag",
+      "bonus_points": 20,
+      "explainer": "Plastic bags go in the black bin, not the blue one. They must be clean and dry: stuff them all into one bag and tie it."
+    },
+    {
+      "category_id": "aerosol_can",
+      "item": "Empty aerosol can",
+      "bonus_points": 20,
+      "explainer": "An aerosol can is blue bin metal, but only when it's completely empty. Take the plastic cap off and put it in the blue bin too."
+    },
+    {
+      "category_id": "broken_glass_ceramic",
+      "item": "Drinking glass or mug",
+      "bonus_points": 20,
+      "explainer": "Only glass bottles and jars go in the blue bin. Drinking glasses, mugs and dishes melt differently, so they go in the garbage (wrap broken pieces)."
+    },
+    {
+      "category_id": "battery",
+      "item": "Used battery",
+      "bonus_points": 25,
+      "explainer": "Batteries never go in any bin: crushed in a truck they can start fires. Tape the ends of lithium ones and take them to a drop-off."
+    },
+    {
+      "category_id": "drink_box",
+      "item": "Juice box",
+      "bonus_points": 20,
+      "explainer": "Juice boxes go in the blue bin with milk cartons, not the black bin with paper. Empty it and push the straw inside."
+    },
+    {
+      "category_id": "coffee_grounds_tea",
+      "item": "Tea bag",
+      "bonus_points": 20,
+      "explainer": "Tea bags and coffee grounds go in the green bin, paper filters and all."
+    }
+  ]
+}

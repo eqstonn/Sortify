@@ -164,3 +164,23 @@ test("a missing API URL is a clear error", async () => {
 
   await expect(api.health()).rejects.toThrow("EXPO_PUBLIC_API_URL");
 });
+
+test("Wrapped asks for the year and month in the path", async () => {
+  fetchMock.mockResolvedValue(reply(200, { year: 2026, month: 10, items: 0 }));
+
+  await api.wrapped(2026, 10);
+
+  const [url, init] = call();
+  expect(url).toBe("https://sortify.test/wrapped/2026/10");
+  expect(init.headers.Authorization).toBe("Bearer test-token");
+});
+
+test("Discover weekly is a signed-in GET", async () => {
+  fetchMock.mockResolvedValue(reply(200, { item: "Greasy pizza box", found: false }));
+
+  const discover = await api.discoverCurrent();
+
+  expect(discover.item).toBe("Greasy pizza box");
+  expect(call()[0]).toBe("https://sortify.test/discover/current");
+  expect(call()[1].headers.Authorization).toBe("Bearer test-token");
+});

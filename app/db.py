@@ -107,6 +107,44 @@ class Database:
             row["confirmed_at"] = datetime.fromisoformat(row["confirmed_at"])
         return res.data
 
+    def scans_between(self, start: datetime, end: datetime) -> list[dict]:
+        """Everyone's confirmed scans with start <= confirmed_at < end, for Wrapped."""
+        rows: list[dict] = []
+        while True:  # Supabase sends 1000 rows at a time
+            page = (
+                self.client.table("scans")
+                .select("user_id, category_id, final_category_id, item, points_awarded, kg_diverted, confirmed_at")
+                .eq("status", "confirmed")
+                .gte("confirmed_at", start.isoformat())
+                .lt("confirmed_at", end.isoformat())
+                .order("confirmed_at")
+                .order("id")  # a fixed order so pages don't overlap
+                .range(len(rows), len(rows) + 999)
+                .execute()
+                .data
+            )
+            rows.extend(page)
+            if len(page) < 1000:
+                break
+        for row in rows:
+            row["confirmed_at"] = datetime.fromisoformat(row["confirmed_at"])
+            row["kg_diverted"] = float(row["kg_diverted"])
+        return rows
+
+    # ---------- badges ----------
+
+    def earned_badges(self, user_id: str) -> dict[str, datetime]:
+        """{badge id: when it was earned}"""
+        rows = self.client.table("badges").select("badge_id, earned_at").eq("user_id", user_id).execute().data
+        return {r["badge_id"]: datetime.fromisoformat(r["earned_at"]) for r in rows}
+
+    def add_badges(self, user_id: str, badge_ids: list[str]) -> None:
+        """Badges the player already has are left alone (and keep their date)."""
+        if not badge_ids:
+            return
+        rows = [{"user_id": user_id, "badge_id": b} for b in badge_ids]
+        self.client.table("badges").upsert(rows, on_conflict="user_id,badge_id", ignore_duplicates=True).execute()
+
     # ---------- profiles ----------
 
     def get_profile(self, user_id: str) -> dict | None:

@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import Database, get_db
 from app.deps import get_current_user
-from app.schemas import ProfileOut, ProfileUpdate, Schedule, Weekday
-from app.services import clock, levels, stats
+from app.schemas import BadgeOut, ProfileOut, ProfileUpdate, Schedule, Weekday
+from app.services import badges, clock, levels, stats
 
 router = APIRouter(tags=["profile"])
 
@@ -43,7 +43,17 @@ def build_profile(db: Database, user_id: str) -> ProfileOut:
         rank=rank_row["rank"] if rank_row else None,
         breakdown=stats.material_breakdown(scans),
         schedule=schedule,
+        badges=badge_list(db.earned_badges(user_id)),
     )
+
+
+def badge_list(earned: dict) -> list[BadgeOut]:
+    """Every badge, earned ones first, then the locked ones (each in badges.BADGES order)."""
+    out = [
+        BadgeOut(id=b.id, name=b.name, description=b.description, earned=b.id in earned, earned_at=earned.get(b.id))
+        for b in badges.BADGES
+    ]
+    return sorted(out, key=lambda b: not b.earned)  # sorted() keeps ties in order
 
 
 @router.get("/me", response_model=ProfileOut)
