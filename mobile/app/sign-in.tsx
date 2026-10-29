@@ -15,8 +15,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AvatarPicker from "@/components/AvatarPicker";
 import type { Avatar } from "@/lib/api";
-import { AVATAR_IDS, AVATARS } from "@/lib/avatars";
+import { AVATARS } from "@/lib/avatars";
 import { useSession } from "@/lib/session";
 import { colors, fonts, radius, spacing, type } from "@/theme";
 
@@ -71,23 +72,7 @@ export default function SignIn() {
 
           <View style={styles.card}>
             <Text style={type.label}>AVATAR</Text>
-            <View style={styles.grid}>
-              {AVATAR_IDS.map((id) => {
-                const selected = id === avatar;
-                return (
-                  <Pressable
-                    key={id}
-                    onPress={() => setAvatar(id)}
-                    style={[styles.avatar, selected && styles.avatarSelected]}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={id}
-                  >
-                    <Text style={styles.avatarEmoji}>{AVATARS[id]}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <AvatarPicker value={avatar} onChange={setAvatar} />
           </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -111,8 +96,6 @@ export default function SignIn() {
   );
 }
 
-const AVATAR_SIZE = 52;
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.xl, gap: spacing.md },
@@ -128,19 +111,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between" },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "transparent",
-  },
-  avatarSelected: { borderColor: colors.primary },
-  avatarEmoji: { fontSize: 26 },
   error: { ...type.body, color: colors.danger },
   button: {
     margin: spacing.xl,

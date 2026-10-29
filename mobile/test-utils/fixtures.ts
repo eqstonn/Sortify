@@ -1,6 +1,15 @@
 // Fake backend replies shared by the screen tests.
 
-import type { BadgeOut, ClassifyResult, DiscoverOut, ProfileOut, WrappedOut } from "@/lib/api";
+import type {
+  BadgeOut,
+  ClassifyResult,
+  DiscoverOut,
+  LeaderboardEntry,
+  LeaderboardOut,
+  NextPickup,
+  ProfileOut,
+  WrappedOut,
+} from "@/lib/api";
 
 export function fakeResult(overrides: Partial<ClassifyResult> = {}): ClassifyResult {
   return {
@@ -105,6 +114,33 @@ export function fakeDiscover(overrides: Partial<DiscoverOut> = {}): DiscoverOut 
     explainer: "Grease ruins paper recycling, so the greasy parts go in the green bin, not the black bin.",
     tips: ["Greasy parts go in the green bin"],
     found: false,
+    ...overrides,
+  };
+}
+
+export function fakePickup(overrides: Partial<NextPickup> = {}): NextPickup {
+  return {
+    pickup_date: "2026-11-03",
+    days_away: 5,
+    bins: ["black_bin", "green_bin"],
+    label: "Black + green bin · Tue, Nov 3",
+    holiday: null,
+    ...overrides,
+  };
+}
+
+export function fakeEntry(rank: number, name: string, overrides: Partial<LeaderboardEntry> = {}): LeaderboardEntry {
+  return { rank, user_id: `u-${name}`, name, avatar: "sprout", points: 4000 - rank * 100, items: 50 - rank, is_me: false, ...overrides };
+}
+
+/** The leaderboard mockup (docs/mockups/02-leaderboard.png): Maya first, Sam 8th. */
+export function fakeLeaderboard(overrides: Partial<LeaderboardOut> = {}): LeaderboardOut {
+  const names = ["Maya R.", "Jordan T.", "Priya S.", "Liam K.", "Ava L.", "Noah B.", "Chloe M."];
+  const me = fakeEntry(8, "Sam", { user_id: "u1", is_me: true, points: 1240, items: 22 });
+  return {
+    range: "week",
+    entries: [...names.map((n, i) => fakeEntry(i + 1, n)), me],
+    me,
     ...overrides,
   };
 }

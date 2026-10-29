@@ -1,20 +1,20 @@
-// Me: the profile from docs/mockups/03-profile.png. Name and level, four stat
-// tiles, "What you sort" bars and badges, all from GET /me.
+// Me: the profile from docs/mockups/03-profile.png. Avatar, name (with an edit
+// button), level, four stat tiles, "What you sort" bars and badges, all from GET /me.
 
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Placeholder from "@/components/Placeholder";
-import { api, ApiError, type BadgeOut, type MaterialShare, type ProfileOut } from "@/lib/api";
+import EditProfileSheet from "@/components/EditProfileSheet";
+import { ErrorState, Loading } from "@/components/ScreenState";
+import StatTile from "@/components/StatTile";
+import { api, type BadgeOut, type MaterialShare } from "@/lib/api";
 import { avatarEmoji } from "@/lib/avatars";
 import { kgText, plural } from "@/lib/format";
 import { materialColor, materialLabel } from "@/lib/materials";
+import { useLoad } from "@/lib/useLoad";
 import { colors, fonts, radius, spacing, type } from "@/theme";
-
-type Status = { state: "loading" } | { state: "ok"; profile: ProfileOut } | { state: "error"; message: string };
 
 // Badge ids from app/services/badges.py
 const BADGE_ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
@@ -25,47 +25,40 @@ const BADGE_ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> 
 };
 
 export default function Me() {
-  const [status, setStatus] = useState<Status>({ state: "loading" });
+  const { status, refreshing, refresh, retry, update } = useLoad(api.me);
+  const [editing, setEditing] = useState(false);
 
-  // Reload when the tab comes into view, so a new scan or badge shows up
-  useFocusEffect(
-    useCallback(() => {
-      api.me().then(
-        (profile) => setStatus({ state: "ok", profile }),
-        (e) => setStatus({ state: "error", message: e instanceof ApiError || e instanceof Error ? e.message : String(e) }),
-      );
-    }, []),
-  );
+  if (status.state === "loading") return <Loading />;
+  if (status.state === "error") return <ErrorState title="Couldn't load your profile" message={status.message} onRetry={retry} />;
 
-  if (status.state === "loading") {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
-  if (status.state === "error") {
-    return (
-      <Placeholder eyebrow="Profile" title="Couldn't load your profile">
-        <Text style={type.body}>{status.message}</Text>
-      </Placeholder>
-    );
-  }
-
-  const p = status.profile;
+  const p = status.data;
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        testID="me-scroll"
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
+      >
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Text style={styles.avatarEmoji}>{avatarEmoji(p.avatar)}</Text>
           </View>
           <View style={styles.headerText}>
-            <Text style={type.title}>{p.name}</Text>
+            <Text style={type.title} numberOfLines={1}>
+              {p.name}
+            </Text>
             <Text style={type.caption}>
               Level {p.level.number} {p.level.name}
             </Text>
           </View>
+          <Pressable
+            onPress={() => setEditing(true)}
+            style={({ pressed }) => [styles.edit, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile"
+          >
+            <Feather name="edit-2" size={18} color={colors.text} />
+          </Pressable>
         </View>
 
         <View style={styles.tiles}>
@@ -98,17 +91,17 @@ export default function Me() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
-  );
-}
 
-function StatTile({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
-  const color = highlight ? colors.onPrimary : colors.text;
-  return (
-    <View style={[styles.tile, highlight && { backgroundColor: colors.primary }]}>
-      <Text style={[styles.tileValue, { color }]}>{value}</Text>
-      <Text style={[type.caption, highlight && { color }]}>{label}</Text>
-    </View>
+      <EditProfileSheet
+        visible={editing}
+        profile={p}
+        onClose={() => setEditing(false)}
+        onSaved={(saved) => {
+          setEditing(false);
+          update(() => saved);
+        }}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -151,7 +144,6 @@ function Badge({ badge }: { badge: BadgeOut }) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.xl, gap: spacing.md },
 
@@ -159,10 +151,9 @@ const styles = StyleSheet.create({
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primarySoft, borderWidth: 2, borderColor: colors.primaryBorder, alignItems: "center", justifyContent: "center" },
   avatarEmoji: { fontSize: 34 },
   headerText: { flex: 1 },
+  edit: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" },
 
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  tile: { flexBasis: "48%", flexGrow: 1, backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, gap: 2 },
-  tileValue: { fontFamily: fonts.extrabold, fontSize: 26 },
 
   card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

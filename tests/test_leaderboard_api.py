@@ -81,3 +81,22 @@ def test_week_ignores_points_from_before_this_week(client, db, auth):
 def test_week_is_the_default(client, auth):
     assert board(client, auth, "week")["range"] == "week"
     assert client.get("/leaderboard", headers=auth).json()["range"] == "week"
+
+
+def test_rows_count_items_sorted_in_the_range(client, db, auth):
+    db.add_confirmed_scan("alice", "paper", points_awarded=8)
+    db.add_confirmed_scan("alice", "aluminum_can", points_awarded=10)
+    db.add_confirmed_scan("alice", "paper", points_awarded=8, when=datetime.now(timezone.utc) - timedelta(days=30))
+
+    assert board(client, auth, "week")["me"]["items"] == 2
+    assert board(client, auth, "all")["me"]["items"] == 3
+
+
+def test_items_is_optional_before_migration_004(client, db, auth):
+    # Without 004_leaderboard_items.sql the views have no items column
+    db.add_confirmed_scan("alice", "paper", points_awarded=8)
+    rows = db._leaderboard_rows("all")
+    db.leaderboard = lambda period, limit: [{k: v for k, v in r.items() if k != "items"} for r in rows]
+
+    body = board(client, auth, "all")
+    assert body["entries"][0]["items"] is None

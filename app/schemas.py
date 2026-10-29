@@ -131,6 +131,8 @@ class LeaderboardEntry(BaseModel):
     name: str
     avatar: str
     points: int
+    # Items sorted in this range. Comes from 004_leaderboard_items.sql; None until that's run.
+    items: int | None = None
     is_me: bool = False
 
 

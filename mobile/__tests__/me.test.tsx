@@ -1,6 +1,6 @@
 // The Me tab with the API faked.
 
-import { render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import Me from "@/app/(tabs)/me";
 import { api, ApiError } from "@/lib/api";
@@ -10,7 +10,7 @@ import { fakeBadges, fakeProfile } from "@/test-utils/fixtures";
 jest.mock("@/lib/supabase", () => ({ getAccessToken: jest.fn(async () => "test-token") }));
 jest.mock("@/lib/api", () => {
   const actual = jest.requireActual("@/lib/api");
-  return { ...actual, api: { me: jest.fn() } };
+  return { ...actual, api: { me: jest.fn(), updateMe: jest.fn() } };
 });
 jest.mock("expo-router", () => {
   const { useEffect } = jest.requireActual("react");
@@ -75,10 +75,67 @@ test("badges come from the backend: earned ones show their icon, the rest are lo
   expect(screen.getAllByTestId("icon-lock")).toHaveLength(1);
 });
 
-test("a failed load shows the backend's message", async () => {
-  mockApi.me.mockRejectedValue(new ApiError(401, "Your login has expired. Sign in again."));
+test("a failed load shows the backend's message, and Try again reloads", async () => {
+  mockApi.me.mockRejectedValueOnce(new ApiError(401, "Your login has expired. Sign in again."));
+
+  await render(<Me />);
+  expect(await screen.findByText("Couldn't load your profile")).toBeTruthy();
+  expect(screen.getByText("Your login has expired. Sign in again.")).toBeTruthy();
+
+  mockApi.me.mockResolvedValue(fakeProfile());
+  await fireEvent.press(screen.getByText("Try again"));
+
+  expect(await screen.findByText("Sam")).toBeTruthy();
+});
+
+test("a spinner shows while loading", async () => {
+  mockApi.me.mockReturnValue(new Promise(() => {}));
 
   await render(<Me />);
 
-  expect(await screen.findByText("Your login has expired. Sign in again.")).toBeTruthy();
+  expect(screen.getByTestId("loading")).toBeTruthy();
+});
+
+test("the edit button changes your name and avatar", async () => {
+  mockApi.me.mockResolvedValue(fakeProfile());
+  mockApi.updateMe.mockResolvedValue(fakeProfile({ name: "Samira", avatar: "owl" }));
+
+  await render(<Me />);
+  await fireEvent.press(await screen.findByLabelText("Edit profile"));
+
+  const input = screen.getByLabelText("Your name");
+  expect(input.props.value).toBe("Sam");
+  await fireEvent.changeText(input, "  Samira ");
+  await fireEvent.press(screen.getByLabelText("owl"));
+  await fireEvent.press(screen.getByText("Save"));
+
+  expect(mockApi.updateMe).toHaveBeenCalledWith({ name: "Samira", avatar: "owl" });
+  expect(await screen.findByText("Samira")).toBeTruthy();
+  expect(screen.getByText("🦉")).toBeTruthy();
+  expect(screen.queryByLabelText("Your name")).toBeNull(); // sheet closed
+});
+
+test("a rejected name shows the backend's message and keeps the sheet open", async () => {
+  mockApi.me.mockResolvedValue(fakeProfile());
+  mockApi.updateMe.mockRejectedValue(new ApiError(422, "Name is too long"));
+
+  await render(<Me />);
+  await fireEvent.press(await screen.findByLabelText("Edit profile"));
+  await fireEvent.press(screen.getByText("Save"));
+
+  expect(await screen.findByText("Name is too long")).toBeTruthy();
+  expect(screen.getByLabelText("Your name")).toBeTruthy();
+});
+
+test("pull to refresh loads fresh stats", async () => {
+  mockApi.me.mockResolvedValue(fakeProfile());
+  await render(<Me />);
+  await screen.findByText("42");
+
+  mockApi.me.mockResolvedValue(fakeProfile({ items_sorted: 43 }));
+  await act(async () => {
+    await screen.getByTestId("me-scroll").props.refreshControl.props.onRefresh();
+  });
+
+  expect(screen.getByText("43")).toBeTruthy();
 });

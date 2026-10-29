@@ -1,4 +1,4 @@
-// A stand-in screen until each tab is built (Phase 5 steps that follow).
+// A titled card on the mint background: Wrapped uses it for its empty and error states.
 
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";

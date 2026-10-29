@@ -104,6 +104,7 @@ export interface LeaderboardEntry {
   name: string;
   avatar: string;
   points: number;
+  items?: number | null; // items sorted in this range; missing until 004_leaderboard_items.sql is run
   is_me: boolean;
 }
 

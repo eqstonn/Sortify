@@ -28,6 +28,9 @@ export const binColors: Record<Bin, string> = {
   unsure: "#8A938C",
 };
 
+// Board podium rings and the #1 crown: gold, silver, bronze
+export const podiumColors = ["#D9A520", "#A7B0AA", "#C4875A"];
+
 // "What you sort" bars, keyed by the backend's material id (lib/materials.ts has the labels)
 export const materialColors: Record<string, string> = {
   plastic: "#2563A6",

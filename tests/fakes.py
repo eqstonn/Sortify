@@ -130,12 +130,14 @@ class FakeDB:
     def _leaderboard_rows(self, period):
         if period == "all":
             totals = {uid: p["total_points"] for uid, p in self.profiles.items()}
+            items = {uid: p["items_sorted"] for uid, p in self.profiles.items()}
         else:
             week_start = datetime.combine(clock.week_start(clock.today()), time(), clock.OTTAWA)
-            totals = {}
+            totals, items = {}, {}
             for s in self.scans.values():
                 if s["status"] == "confirmed" and s["confirmed_at"] >= week_start:
                     totals[s["user_id"]] = totals.get(s["user_id"], 0) + s["points_awarded"]
+                    items[s["user_id"]] = items.get(s["user_id"], 0) + 1
 
         ordered = sorted(((pts, uid) for uid, pts in totals.items() if pts > 0), key=lambda t: (-t[0], t[1]))
         rows = []
@@ -143,7 +145,10 @@ class FakeDB:
             # rank(): players with equal points share a rank, and the next rank skips ahead
             rank = rows[-1]["rank"] if rows and rows[-1]["points"] == pts else len(rows) + 1
             profile = self.profiles[uid]
-            rows.append({"user_id": uid, "name": profile["name"], "avatar": profile["avatar"], "points": pts, "rank": rank})
+            rows.append({
+                "user_id": uid, "name": profile["name"], "avatar": profile["avatar"],
+                "points": pts, "rank": rank, "items": items[uid],
+            })
         return rows
 
     # ---------- test helpers ----------
