@@ -106,7 +106,7 @@ Manual: two test users scan and confirm at `/docs`; watch the leaderboard and `/
 
 Tests (Jest + jest-expo + React Native Testing Library, API mocked): `api.ts` sends photo and token and handles errors; `BinCard` colours per bin; "I recycled it" calls confirm and shows the toast; "Not right?" sends a correction; Home renders from a fake profile; camera shows the upload fallback when permission is denied.
 
-Manual: `npx expo start`, Expo Go on a phone, backend over ngrok; full scan, confirm, leaderboard loop.
+Manual: `npx expo start`, Expo Go on a phone, backend over a cloudflared tunnel; full scan, confirm, leaderboard loop.
 
 ## Phase 6: Wrapped, Discover weekly and badges
 
@@ -128,7 +128,7 @@ Tests: Wrapped totals, top-5 order and rarest find from fixed fake scans; busies
 | `scripts/seed.py` | Categories and sites into Supabase, plus about 20 fake Ottawa players with a month of scans |
 | `render.yaml` | Render deploy config |
 | `scripts/smoke_test.py` | Hits the live `/health` and `/classify` and prints pass or fail |
-| `README.md` | Local run, ngrok, Render deploy |
+| `README.md` | Local run, cloudflared, Render deploy |
 | `DEMO.md` | Demo script: which items to scan, in what order, backup plan |
 
 Tests: seeding twice makes no duplicates; fake players' points match their scans; smoke test passes against Render; full `pytest` passes.

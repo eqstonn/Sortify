@@ -50,14 +50,6 @@ test("public endpoints don't send a token", async () => {
   expect(call()[1].headers.Authorization).toBeUndefined();
 });
 
-test("skips ngrok's browser warning page", async () => {
-  fetchMock.mockResolvedValue(reply(200, { status: "ok" }));
-
-  await api.health();
-
-  expect(call()[1].headers["ngrok-skip-browser-warning"]).toBe("1");
-});
-
 test("classify uploads the photo and location as a multipart form", async () => {
   fetchMock.mockResolvedValue(reply(200, { category_id: "aluminum_can", bin: "blue_bin", scan_id: "s1" }));
 

@@ -5,7 +5,7 @@ Hackathon project (teams of 4, 1st/2nd year students). A phone app that scans an
 ## Stack
 
 - **Frontend:** Expo (React Native) app
-- **Backend:** Python FastAPI (deployed on Render; ngrok for local phone testing)
+- **Backend:** Python FastAPI (deployed on Render; cloudflared tunnel for local phone testing)
 - **Recognition:** Gemini Flash via `google-genai`
 - **Auth + data:** Supabase (auth token checked in the backend, service-role client for DB writes)
 

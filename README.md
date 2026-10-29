@@ -41,21 +41,20 @@ In `mobile/.env`, set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLI
 | Where the app runs | `EXPO_PUBLIC_API_URL` |
 | --- | --- |
 | Browser on your laptop (press `w`) | `http://localhost:8000` |
-| Your phone, backend on your laptop | the ngrok or cloudflared URL (below) |
+| Your phone, backend on your laptop | the cloudflared URL (below) |
 | Your phone, backend on Render | `https://sortify-api.onrender.com` (your Render URL) |
 
 Expo reads `.env` only when it starts, so restart with `npx expo start --clear` after changing it. Then scan the QR code with the Camera app (iPhone) or Expo Go (Android).
 
-### Phone + laptop backend (ngrok or cloudflared)
+### Phone + laptop backend (cloudflared)
 
 Your phone can't reach `localhost` on your laptop, so open a tunnel in a second terminal:
 
 ```bash
-ngrok http 8000                                   # or:
 cloudflared tunnel --url http://localhost:8000
 ```
 
-Copy the `https://…` URL it prints into `EXPO_PUBLIC_API_URL` and restart Expo. The URL changes every time you restart the tunnel.
+Copy the `https://….trycloudflare.com` URL it prints into `EXPO_PUBLIC_API_URL` and restart Expo. The URL changes every time you restart the tunnel.
 
 ## 4. Deploy the backend to Render (free)
 

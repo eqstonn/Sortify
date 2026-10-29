@@ -265,12 +265,7 @@ function baseUrl(): string {
 type Options = { method?: string; body?: unknown; auth?: boolean };
 
 async function request<T>(path: string, { method = "GET", body, auth = true }: Options = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    // Free ngrok answers browsers with an HTML warning page instead of our API; this skips it.
-    // Harmless anywhere else (Render ignores it).
-    "ngrok-skip-browser-warning": "1",
-  };
+  const headers: Record<string, string> = { Accept: "application/json" };
   if (auth) headers.Authorization = `Bearer ${await getAccessToken()}`;
 
   let payload: BodyInit | undefined;

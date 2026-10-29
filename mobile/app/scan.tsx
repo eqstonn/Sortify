@@ -14,7 +14,7 @@ import { api, ApiError } from "@/lib/api";
 import { lastScan } from "@/lib/lastScan";
 import { colors, fonts, radius, spacing } from "@/theme";
 
-// The backend shrinks photos to 1024 px anyway, so a smaller upload is faster over ngrok
+// The backend shrinks photos to 1024 px anyway, so a smaller upload is faster over the tunnel
 const PHOTO_QUALITY = 0.5;
 
 type Mode = "photo" | "barcode";
