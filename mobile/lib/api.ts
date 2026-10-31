@@ -2,6 +2,7 @@
 // keep them in sync when the backend changes. All scoring happens on the
 // backend; the app only shows what comes back.
 
+import { File } from "expo-file-system";
 import { Platform } from "react-native";
 
 import { getAccessToken } from "@/lib/supabase";
@@ -309,8 +310,8 @@ export const api = {
       // On web the uri is a blob: URL, so send the actual file
       form.append("image", await (await fetch(photoUri)).blob(), "photo.jpg");
     } else {
-      // React Native reads the file from the uri when it sends the form
-      form.append("image", { uri: photoUri, name: "photo.jpg", type: "image/jpeg" } as unknown as Blob);
+      // Expo's fetch can't send React Native's { uri, name, type } parts, only real files
+      form.append("image", new File(photoUri));
     }
     if (location) {
       form.append("lat", String(location.lat));

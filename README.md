@@ -48,7 +48,16 @@ Expo reads `.env` only when it starts, so restart with `npx expo start --clear` 
 
 ### Phone + laptop backend (cloudflared)
 
-Your phone can't reach `localhost` on your laptop, so open a tunnel in a second terminal:
+Your phone can't reach `localhost` on your laptop, so open a tunnel in a second terminal.
+
+`cloudflared` is a separate program, not a pip package, so install it once:
+
+```bash
+winget install --id Cloudflare.cloudflared   # Windows
+brew install cloudflared                     # macOS
+```
+
+Then open a new terminal (so it picks up the new `PATH`), check with `cloudflared --version`, and start the tunnel:
 
 ```bash
 cloudflared tunnel --url http://localhost:8000
