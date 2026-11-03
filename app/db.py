@@ -92,6 +92,27 @@ class Database:
         )
         return [r["image_hash"] for r in res.data]
 
+    def accuracy_scans(self) -> list[dict]:
+        """Confirmed predictions and user feedback, paginated without a 1000-row truncation.
+
+        No user IDs or images leave this method. Sorting on id prevents page overlap.
+        """
+        rows: list[dict] = []
+        while True:
+            page = (
+                self.client.table("scans")
+                .select("id,category_id,final_category_id,confidence")
+                .eq("status", "confirmed")
+                .order("confirmed_at")
+                .order("id")
+                .range(len(rows), len(rows) + 999)
+                .execute()
+                .data
+            )
+            rows.extend(page)
+            if len(page) < 1000:
+                return rows
+
     def confirmed_scans(self, user_id: str) -> list[dict]:
         """This player's confirmed scans (up to 1000), newest first, for profile stats."""
         res = (

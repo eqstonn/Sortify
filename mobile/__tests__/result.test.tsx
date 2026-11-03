@@ -138,6 +138,30 @@ test('an "unsure" scan can\'t be confirmed until it is corrected', async () => {
   expect(screen.getByText('Tap "Not right?" and pick what it is')).toBeTruthy();
 });
 
+test("low confidence offers the model's top choices and requires selection", async () => {
+  lastScan.set({ photoUri: "file:///photo.jpg", result: fakeResult({
+    confidence: 0.42, needs_review: true,
+    alternatives: [
+      { category_id: "aluminum_can", name: "Aluminum can", bin: "blue_bin" },
+      { category_id: "battery", name: "Battery", bin: "dropoff" },
+    ],
+  }) });
+  mockApi.correctScan.mockResolvedValue(fakeResult({
+    category_id: "battery", name: "Battery", bin: "dropoff", points: 10,
+  }));
+
+  await render(<Result />);
+  expect(screen.getByText("We're not sure. Which item is it?")).toBeTruthy();
+  await fireEvent.press(screen.getByRole("button", { name: "I recycled it" }));
+  expect(mockApi.confirmScan).not.toHaveBeenCalled();
+
+  await fireEvent.press(screen.getByRole("button", { name: "Choose Battery" }));
+  expect(mockApi.correctScan).toHaveBeenCalledWith("s1", { category_id: "battery" });
+  await waitFor(() => expect(screen.getByText("Battery")).toBeTruthy());
+  expect(screen.getByText("+10 pts")).toBeTruthy();
+});
+
+
 test("Skip goes back without confirming", async () => {
   await render(<Result />);
   await fireEvent.press(screen.getByRole("button", { name: "Skip" }));

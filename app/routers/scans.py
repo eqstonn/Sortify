@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.db import Database, ScanNotPending, get_db
 from app.deps import get_current_user
 from app.schemas import ClassifyResult, ConfirmResult, CorrectIn, ScanOut, ScanStatus
-from app.services import badges, clock, discover, points, rules
+from app.services import badges, clock, discover, gemini, points, rules
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -34,6 +34,10 @@ def confirm(
     scan = owned_scan(db, scan_id, user_id)
     if scan["status"] != ScanStatus.PENDING:
         raise HTTPException(409, "You already confirmed this scan")
+
+    # Frontend gating is not sufficient: a client could call confirm directly.
+    if scan["final_category_id"] is None and scan["confidence"] < gemini.REVIEW_CONFIDENCE:
+        raise HTTPException(400, "Check the suggested categories and choose the correct item first.")
 
     category_id = final_category(scan)
     if category_id not in rules.load_categories():

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.routers import categories, classify, discover, leaderboard, profile, scans, schedule, wrapped
+from app.routers import accuracy, categories, classify, discover, leaderboard, profile, scans, schedule, wrapped
 
 logger = logging.getLogger("sortify")
 
@@ -46,6 +46,7 @@ def create_app() -> FastAPI:
     app.include_router(schedule.router)
     app.include_router(wrapped.router)
     app.include_router(discover.router)
+    app.include_router(accuracy.router)
     return app
 
 

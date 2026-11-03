@@ -8,6 +8,7 @@ Gemini can never send someone to the wrong bin.
 import json
 import math
 from functools import lru_cache
+from pathlib import Path
 
 import httpx
 from google import genai
@@ -18,8 +19,8 @@ from app.config import get_settings
 from app.services import rules
 
 UNKNOWN_ID = "unknown"
-# Below this we'd rather say "not sure" than guess the wrong bin
-MIN_CONFIDENCE = 0.5
+# Require the user to pick a category below this confidence; no automatic confirmation.
+REVIEW_CONFIDENCE = 0.70
 # Someone is holding their phone up waiting, so give up rather than hang
 TIMEOUT_SECONDS = 30
 
@@ -28,6 +29,7 @@ class GeminiAnswer(BaseModel):
     category_id: str
     item: str  # Gemini's short name for the thing, e.g. "Coke can" (display only)
     confidence: float = Field(ge=0, le=1)
+    alternatives: list[str] = Field(default_factory=list)
 
 
 class GeminiError(RuntimeError):
@@ -40,6 +42,9 @@ def build_prompt() -> str:
         examples = ", ".join(c.examples)
         lines.append(f"- {c.id}: {c.name}" + (f" (e.g. {examples})" if examples else ""))
     category_list = "\n".join(lines)
+    hint_file = Path(__file__).resolve().parents[2] / "data" / "classifier_hints.json"
+    hints = json.loads(hint_file.read_text(encoding="utf-8"))["hints"]
+    hint_lines = "\n".join("- " + hint for hint in hints)
     return f"""You are a recycling assistant for Ottawa, Ontario, Canada.
 Look at the photo and identify the single main item in it.
 
@@ -49,7 +54,13 @@ Pick the category_id that best matches the item from this list:
 
 Also give:
 - item: a short name for what you see (2-4 words, e.g. "Coke can")
-- confidence: how sure you are of the category, from 0.0 to 1.0"""
+- confidence: how sure you are of the category, from 0.0 to 1.0
+- alternatives: up to 3 DISTINCT category IDs in descending likelihood, including
+  category_id first if it is a valid category. Only use IDs from the list.
+  Include plausible choices even when you are unsure; never invent category IDs.
+
+Human-reviewed Ottawa disambiguation hints:
+{hint_lines}"""
 
 
 def response_schema() -> types.Schema:
@@ -62,8 +73,12 @@ def response_schema() -> types.Schema:
             ),
             "item": types.Schema(type=types.Type.STRING),
             "confidence": types.Schema(type=types.Type.NUMBER),
+            "alternatives": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(type=types.Type.STRING, enum=rules.category_ids()),
+            ),
         },
-        required=["category_id", "item", "confidence"],
+        required=["category_id", "item", "confidence", "alternatives"],
     )
 
 
@@ -117,11 +132,26 @@ def parse_answer(text: str) -> GeminiAnswer:
         confidence = 0.0
     confidence = min(max(confidence, 0.0), 1.0)
 
+    valid_ids = set(rules.category_ids())
     category_id = raw.get("category_id")
-    if category_id not in rules.category_ids() or confidence < MIN_CONFIDENCE:
+    if not isinstance(category_id, str) or category_id not in valid_ids:
         category_id = UNKNOWN_ID
 
-    return GeminiAnswer(category_id=category_id, item=item, confidence=confidence)
+    # Preserve Gemini's actual first guess even below the review threshold;
+    # the app and backend require a user selection before it can be confirmed.
+    # This keeps category_id useful for evaluating model confusion later.
+    suggestions = []
+    raw_alternatives = raw.get("alternatives")
+    candidates = ([category_id] if category_id in valid_ids else []) + (
+        raw_alternatives if isinstance(raw_alternatives, list) else []
+    )
+    for candidate in candidates:
+        if isinstance(candidate, str) and candidate in valid_ids and candidate not in suggestions:
+            suggestions.append(candidate)
+        if len(suggestions) == 3:
+            break
+
+    return GeminiAnswer(category_id=category_id, item=item, confidence=confidence, alternatives=suggestions)
 
 
 def classify(image: bytes) -> GeminiAnswer:

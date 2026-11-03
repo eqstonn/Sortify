@@ -67,12 +67,22 @@ def test_battery_without_location_has_no_dropoff(client, photo, fake_gemini):
     assert scan(client, photo).json()["nearest_dropoff"] is None
 
 
-def test_unsure_answer_says_not_sure(client, photo, fake_gemini):
-    fake_gemini(category_id="aluminum_can", item="blurry thing", confidence=0.1)
+def test_low_confidence_requires_review_and_includes_choices(client, photo, fake_gemini):
+    fake_gemini(category_id="aluminum_can", item="blurry thing", confidence=0.1,
+                alternatives=["aluminum_can", "battery", "paper"])
+    body = scan(client, photo).json()
+    assert body["category_id"] == "aluminum_can"  # preserve model prediction
+    assert body["needs_review"] is True
+    assert [choice["category_id"] for choice in body["alternatives"]] == [
+        "aluminum_can", "battery", "paper"]
+
+
+def test_unknown_prediction_still_cannot_confirm(client, photo, fake_gemini):
+    fake_gemini(category_id="unknown", item="blurry thing", confidence=0.1)
     body = scan(client, photo).json()
     assert body["category_id"] == "unknown"
     assert body["bin"] == "unsure"
-    assert body["points"] == 0
+    assert body["needs_review"] is True
 
 
 def test_empty_upload_is_400(client, fake_gemini):

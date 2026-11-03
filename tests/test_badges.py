@@ -64,7 +64,7 @@ def test_new_badges_skips_ones_you_have():
 
 
 def confirm(client, db, headers, category_id, user_id="alice"):
-    scan_id = db.insert_scan({"user_id": user_id, "category_id": category_id, "item": category_id})["id"]
+    scan_id = db.insert_scan({"user_id": user_id, "category_id": category_id, "item": category_id, "confidence": 0.95})["id"]
     res = client.post(f"/scans/{scan_id}/confirm", headers=headers)
     assert res.status_code == 200, res.text
     return res.json()

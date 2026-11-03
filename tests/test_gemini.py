@@ -26,7 +26,7 @@ def test_prompt_lists_every_category():
 def test_schema_limits_gemini_to_our_ids():
     schema = gemini.response_schema()
     assert schema.properties["category_id"].enum == rules.category_ids() + ["unknown"]
-    assert set(schema.required) == {"category_id", "item", "confidence"}
+    assert set(schema.required) == {"category_id", "item", "confidence", "alternatives"}
 
 
 # ---------- answer validation ----------
@@ -44,10 +44,18 @@ def test_made_up_category_becomes_unknown():
     assert a.category_id == "unknown"
 
 
-def test_low_confidence_becomes_unknown():
+def test_low_confidence_preserves_guess_for_user_review():
     a = gemini.parse_answer(answer(category_id="battery", item="battery?", confidence=0.2))
-    assert a.category_id == "unknown"
+    assert a.category_id == "battery"
     assert a.item == "battery?"
+    assert a.confidence < gemini.REVIEW_CONFIDENCE
+    assert a.alternatives == ["battery"]
+
+
+def test_alternatives_are_valid_deduplicated_and_capped():
+    a = gemini.parse_answer(answer(category_id="battery", item="cells", confidence=0.4,
+                                   alternatives=["battery", "fake", "paper", "aluminum_can", "glass_bottle"]))
+    assert a.alternatives == ["battery", "paper", "aluminum_can"]
 
 
 @pytest.mark.parametrize("text", ["", "not json", "[1, 2]", "null"])

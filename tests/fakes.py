@@ -72,6 +72,12 @@ class FakeDB:
     def recent_confirmed_hashes(self):
         return [s["image_hash"] for s in self.scans.values() if s["status"] == "confirmed" and s["image_hash"]]
 
+    def accuracy_scans(self):
+        return [
+            {k: s.get(k) for k in ("id", "category_id", "final_category_id", "confidence")}
+            for s in self.scans.values() if s["status"] == "confirmed"
+        ]
+
     def confirmed_scans(self, user_id):
         mine = [dict(s) for s in self.scans.values() if s["user_id"] == user_id and s["status"] == "confirmed"]
         return sorted(mine, key=lambda s: s["confirmed_at"], reverse=True)

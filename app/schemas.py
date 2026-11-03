@@ -69,6 +69,14 @@ class Disposal(BaseModel):
     tips: list[str]
 
 
+class CategoryChoice(BaseModel):
+    """One suggested category for a low-confidence review."""
+
+    category_id: str
+    name: str
+    bin: Bin
+
+
 class ClassifyResult(Disposal):
     """Response of POST /classify: everything the result screen shows."""
 
@@ -76,6 +84,8 @@ class ClassifyResult(Disposal):
     confidence: float = Field(ge=0, le=1)
     scan_id: str | None = None  # pass to /scans/{id}/confirm or /correct
     nearest_dropoff: NearestDropoff | None = None
+    needs_review: bool = False
+    alternatives: list[CategoryChoice] = Field(default_factory=list)
 
 
 class ScanStatus(str, Enum):
@@ -314,6 +324,45 @@ class DiscoverItem(BaseModel):
     item: str  # e.g. "Greasy pizza box"
     bonus_points: int = Field(gt=0)
     explainer: str
+
+
+class AccuracySummary(BaseModel):
+    confirmed_scans: int
+    corrections: int
+    observed_uncorrected_pct: float | None
+    reviewed_scans: int
+    reviewed_accuracy_pct: float | None
+
+
+class CategoryAccuracy(AccuracySummary):
+    category_id: str
+
+
+class ConfidenceAccuracy(AccuracySummary):
+    bucket: str
+
+
+class CommonMixup(BaseModel):
+    predicted_category_id: str
+    actual_category_id: str
+    count: int
+
+
+class ReportedActualCategoryAccuracy(BaseModel):
+    category_id: str
+    reviewed_scans: int
+    correctly_predicted: int
+    reviewed_accuracy_pct: float | None
+
+
+class AccuracyReport(BaseModel):
+    overall: AccuracySummary
+    per_category: list[CategoryAccuracy]
+    per_reported_actual_category: list[ReportedActualCategoryAccuracy]
+    common_mixups: list[CommonMixup]
+    confidence_buckets: list[ConfidenceAccuracy]
+    review_threshold: float
+    caveat: str
 
 
 class DiscoverOut(BaseModel):

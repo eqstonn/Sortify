@@ -25,6 +25,8 @@ export function fakeResult(overrides: Partial<ClassifyResult> = {}): ClassifyRes
     confidence: 0.96,
     scan_id: "s1",
     nearest_dropoff: null,
+    needs_review: false,
+    alternatives: [],
     ...overrides,
   };
 }

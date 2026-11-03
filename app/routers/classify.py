@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.db import Database, get_db
 from app.deps import get_current_user
-from app.schemas import ClassifyResult
+from app.schemas import CategoryChoice, ClassifyResult
 from app.services import gemini, images, points, rules
 
 log = logging.getLogger(__name__)
@@ -59,6 +59,11 @@ def classify(
         }
     )
 
+    review = answer.confidence < gemini.REVIEW_CONFIDENCE or answer.category_id == gemini.UNKNOWN_ID
+    choices = [
+        CategoryChoice(category_id=cid, name=rules.get_disposal(cid).name, bin=rules.get_disposal(cid).bin)
+        for cid in answer.alternatives
+    ] if review else []
     log.info("Scan: %r -> %s (%.2f)", answer.item, disposal.category_id, answer.confidence)
     return ClassifyResult(
         **disposal.model_dump(),
@@ -66,4 +71,6 @@ def classify(
         confidence=answer.confidence,
         scan_id=scan["id"],
         nearest_dropoff=nearest,
+        needs_review=review,
+        alternatives=choices,
     )

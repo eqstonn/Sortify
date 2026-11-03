@@ -48,6 +48,30 @@ def confirm(client, scan_id, headers):
     return client.post(f"/scans/{scan_id}/confirm", headers=headers)
 
 
+def test_low_confidence_requires_explicit_selection(client, auth, gemini_says):
+    gemini_says("aluminum_can", item="maybe can", confidence=0.32)
+    result = client.post(
+        "/classify",
+        files={"image": ("photo.jpg", make_photo(seed=314), "image/jpeg")},
+        headers=auth,
+    )
+    assert result.status_code == 200
+    scan_id = result.json()["scan_id"]
+    assert result.json()["needs_review"] is True
+    blocked = confirm(client, scan_id, auth)
+    assert blocked.status_code == 400
+    assert "choose" in blocked.json()["detail"].lower()
+
+    # Selecting even the model's first guess counts as an explicit review,
+    # and is still capped at the correction-points maximum.
+    reviewed = client.post(
+        f"/scans/{scan_id}/correct", json={"category_id": "aluminum_can"}, headers=auth
+    )
+    assert reviewed.status_code == 200
+    assert reviewed.json()["needs_review"] is False
+    assert confirm(client, scan_id, auth).json()["points_awarded"] == 10
+
+
 # ---------- auth ----------
 
 

@@ -77,7 +77,7 @@ export default function Result() {
 
   const scanId = result.scan_id;
   // An "unsure" scan has no bin to confirm; the backend refuses it until it's corrected
-  const canConfirm = !!scanId && result.bin !== "unsure" && !busy;
+  const canConfirm = !!scanId && result.bin !== "unsure" && !result.needs_review && !busy;
   const badge = badgeFor(result);
 
   const confirm = async () => {
@@ -138,6 +138,34 @@ export default function Result() {
           </View>
         ) : (
           <BinCard bin={result.bin} detail={binDetail(result, pickup)} />
+        )}
+
+        {result.needs_review && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>We're not sure. Which item is it?</Text>
+            <Text style={type.caption}>Choose the correct category before earning points.</Text>
+            {result.alternatives.map((choice) => (
+              <Pressable
+                key={choice.category_id}
+                onPress={() => correct(choice.category_id)}
+                disabled={!!busy}
+                accessibilityRole="button"
+                accessibilityLabel={`Choose ${choice.name}`}
+                style={({ pressed }) => [styles.choice, pressed && { opacity: 0.8 }]}
+              >
+                <Text style={styles.choiceText}>{choice.name}</Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setPicking(true)}
+              disabled={!!busy}
+              accessibilityRole="button"
+              accessibilityLabel="Choose another category"
+              style={styles.choice}
+            >
+              <Text style={styles.choiceText}>Something else? See all categories</Text>
+            </Pressable>
+          </View>
         )}
 
         {result.nearest_dropoff && (
@@ -280,4 +308,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   secondaryText: { fontFamily: fonts.bold, fontSize: 15, color: colors.text },
+  choice: {
+    backgroundColor: colors.primarySoft, padding: spacing.md,
+    borderRadius: radius.md, minHeight: 48, justifyContent: "center",
+  },
+  choiceText: { fontFamily: fonts.bold, fontSize: 14, color: colors.primary },
 });

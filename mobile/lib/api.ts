@@ -64,11 +64,19 @@ export interface Disposal {
 }
 
 /** POST /classify and POST /scans/{id}/correct: everything the result screen shows. */
+export interface CategoryChoice {
+  category_id: string;
+  name: string;
+  bin: Bin;
+}
+
 export interface ClassifyResult extends Disposal {
   item: string; // what Gemini saw, e.g. "Coke can"
   confidence: number; // 0 to 1
   scan_id: string | null;
   nearest_dropoff: NearestDropoff | null;
+  needs_review: boolean;
+  alternatives: CategoryChoice[];
 }
 
 export interface ScanOut {

@@ -125,7 +125,7 @@ tests/               pytest
 
 1. The app uploads a photo to `POST /classify` (plus optional `lat`/`lon`).
 2. `images.py` shrinks it and strips EXIF, so no GPS location leaves the server.
-3. `gemini.py` asks Gemini to pick one category id from `data/categories.json` (enforced by a JSON schema). Made-up ids and confidence under 0.5 become `unknown`.
+3. `gemini.py` asks Gemini to pick one category id from `data/categories.json` (enforced by a JSON schema). Made-up ids become `unknown`; confidence under 0.70 requires user review before confirmation.
 4. `rules.py` looks up the bin, points and tips for that id. Gemini never decides the bin.
 5. For drop-off items (batteries, electronics, hazardous) the nearest site is added if a location was sent.
 
@@ -140,6 +140,7 @@ tests/               pytest
 | `POST /scans/{id}/confirm` 🔒 | "I recycled it": awards points |
 | `POST /scans/{id}/correct` 🔒 | "Not right?": body `{"category_id": "..."}` |
 | `GET /scans/me` 🔒 | Your last 50 scans |
+| `GET /stats/accuracy` 🔒 | Aggregate corrections, common mix-ups, and confidence bands (not ground-truth accuracy) |
 | `GET /leaderboard?range=week\|all` 🔒 | Top 20 plus your own row |
 | `GET /me`, `PATCH /me` 🔒 | Profile, level, stats, breakdown, badges; change name and avatar |
 | `GET /schedule/next`, `PUT /me/schedule` 🔒 | "Up next" pickup; set your pickup day |
@@ -158,5 +159,10 @@ tests/               pytest
 - The confirm-once rule and the cap run inside the `award_points` database function in one transaction, so two taps at once can't cheat it. Only the backend can call that function.
 
 ## Checking accuracy and the Ottawa data
+
+`GET /stats/accuracy` helps monitor recorded model/user disagreements, by predicted
+category and confidence bracket. Uncorrected scans are not verified correct.
+See [docs/ACCURACY_LOOP.md](docs/ACCURACY_LOOP.md) for the confidence-review flow,
+manual prompt-hint curation, holdout-photo protocol, and metric caveats.
 
 Put real photos in `tests/eval_images/<category_id>/` and run `python -m scripts.eval_classifier` (uses your real Gemini key). Entries in `data/*.json` with `"verify": true` still need checking against ottawa.ca.
