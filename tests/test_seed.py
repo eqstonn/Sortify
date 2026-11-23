@@ -112,3 +112,44 @@ def test_remove_deletes_every_fake_player(seeded):
     assert fake_ids(seeded) == [None] * 20
     assert seeded.scans == {} and seeded.profiles == {}
     assert seed.remove(seeded) == 0  # and running it again is fine
+
+
+# ---------- --bump: a few more points this week ----------
+
+
+def week_points(db, user_id):
+    monday = datetime(2026, 10, 26, tzinfo=clock.OTTAWA)
+    return sum(s["points_awarded"] for s in db.scans.values() if s["user_id"] == user_id and s["confirmed_at"] >= monday)
+
+
+def test_bump_adds_0_to_50_points_this_week_and_keeps_totals_matching(seeded):
+    ids = fake_ids(seeded)
+    before = {i: (seeded.profiles[i]["total_points"], week_points(seeded, i)) for i in ids}
+
+    rows = seed.bump(seeded, NOW, rng=__import__("random").Random(1))
+
+    assert len(rows) == 20
+    for user_id, row in zip(ids, rows):
+        total_before, week_before = before[user_id]
+        assert 0 <= row["points"] <= 50
+        assert seeded.profiles[user_id]["total_points"] == total_before + row["points"]
+        assert week_points(seeded, user_id) == week_before + row["points"]  # it shows on "This week"
+        mine = [s for s in seeded.scans.values() if s["user_id"] == user_id]
+        assert seeded.profiles[user_id]["total_points"] == sum(s["points_awarded"] for s in mine)
+        assert seeded.profiles[user_id]["items_sorted"] == len(mine)
+    assert any(r["points"] > 0 for r in rows)
+
+
+def test_bumped_scans_are_this_week_and_never_in_the_future(seeded):
+    before = set(seeded.scans)
+    seed.bump(seeded, NOW, rng=__import__("random").Random(2))
+
+    monday = datetime(2026, 10, 26, tzinfo=clock.OTTAWA)
+    new = [s for k, s in seeded.scans.items() if k not in before]
+    assert new
+    assert all(monday <= s["confirmed_at"] <= NOW and s["status"] == "confirmed" for s in new)
+
+
+def test_bump_skips_players_that_were_never_seeded(db):
+    assert seed.bump(db, NOW) == []
+

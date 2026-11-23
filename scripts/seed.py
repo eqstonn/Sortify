@@ -1,6 +1,7 @@
 """Fill the leaderboard with 20 fake Ottawa players and their last 30 days of scans, for the demo.
 
     python -m scripts.seed            # add the players, or refresh them (safe to run again)
+    python -m scripts.seed --bump     # give each one 0-50 more points this week, on top
     python -m scripts.seed --remove   # delete them all after the demo
 
 Each fake player is a login with an email like seed-01@example.com. Running it
@@ -136,6 +137,61 @@ def seed(db, now: datetime, cap: int) -> list[dict]:
     return summary
 
 
+BUMP_MOST = 50  # --bump: up to this many extra points per player
+
+
+def bump(db, now: datetime, most: int = BUMP_MOST, rng: random.Random | None = None) -> list[dict]:
+    """Gives each fake player 0 to `most` more points this week, as extra confirmed scans
+    between Monday and `now`, so the "This week" board looks lively. Adds to what's there
+    (unlike seed(), which replaces it) and keeps each profile's totals matching its scans."""
+    rng = rng or random.Random()
+    categories = rules.load_categories()
+    local_now = now.astimezone(clock.OTTAWA)
+    monday = datetime.combine(clock.week_start(local_now.date()), time(0, 0), clock.OTTAWA)
+    seconds_so_far = max(int((local_now - monday).total_seconds()), 1)
+    smallest = min(categories[c].points for c in WEIGHTS)
+
+    summary = []
+    for n, player in enumerate(PLAYERS, start=1):
+        user_id = db.find_user(EMAIL.format(n))
+        if not user_id:
+            continue  # not seeded yet: run seed first
+        target = rng.randint(0, most)
+        rows: list[dict] = []
+        total = 0
+        for _ in range(50):  # pick items until the next one would overshoot the target
+            if target - total < smallest:
+                break
+            category_id = rng.choices(list(WEIGHTS), weights=list(WEIGHTS.values()))[0]
+            worth = categories[category_id].points  # no first-time bonus: they've sorted these before
+            if total + worth > target:
+                continue
+            when = monday + timedelta(seconds=rng.randint(0, seconds_so_far - 1))
+            category = categories[category_id]
+            rows.append({
+                "user_id": user_id,
+                "category_id": category_id,
+                "item": rng.choice(category.examples or [category.name]),
+                "confidence": round(rng.uniform(0.75, 0.99), 2),
+                "status": "confirmed",
+                "points_awarded": worth,
+                "kg_diverted": points.kg_for(category_id),
+                "created_at": when - timedelta(seconds=20),
+                "confirmed_at": when,
+            })
+            total += worth
+        if rows:
+            db.insert_scans(rows)
+            profile = db.get_profile(user_id)
+            db.update_profile(user_id, {
+                "total_points": profile["total_points"] + total,
+                "items_sorted": profile["items_sorted"] + len(rows),
+                "kg_diverted": round(float(profile["kg_diverted"]) + sum(r["kg_diverted"] for r in rows), 3),
+            })
+        summary.append({"name": player.name, "scans": len(rows), "points": total})
+    return summary
+
+
 def remove(db) -> int:
     """Deletes every fake player (their scans and badges go with them). Returns how many."""
     removed = 0
@@ -150,6 +206,7 @@ def remove(db) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--remove", action="store_true", help="delete the fake players instead")
+    parser.add_argument("--bump", action="store_true", help=f"give each fake player 0-{BUMP_MOST} more points this week")
     args = parser.parse_args()
 
     settings = load_settings()
@@ -162,6 +219,12 @@ def main() -> None:
         return
 
     now = datetime.now(clock.OTTAWA)
+    if args.bump:
+        rows = bump(db, now)
+        for row in rows:
+            print(f"{row['name']:<12} +{row['points']:>2} pts ({row['scans']} scans this week)")
+        print(f"\nGave {len(rows)} fake players {sum(r['points'] for r in rows)} more points this week.")
+        return
     for row in seed(db, now, settings.daily_point_cap):
         badge_names = ", ".join(badges.BY_ID[b].name for b in row["badges"]) or "-"
         print(f"{row['name']:<12} {row['scans']:>3} scans {row['points']:>5} pts   badges: {badge_names}")
