@@ -9,7 +9,7 @@ def test_loads_from_environment(monkeypatch):
     settings = load_settings(_env_file=None)
     assert settings.gemini_api_key == "abc123"
     assert settings.daily_point_cap == 150
-    assert settings.gemini_model == "gemini-3.8-flash"
+    assert settings.gemini_model == "gemini-3.5-flash-lite"
 
 
 def test_missing_gemini_key_gives_clear_error(monkeypatch):

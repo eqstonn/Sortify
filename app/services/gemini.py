@@ -11,6 +11,7 @@
 """
 
 import json
+import logging
 import math
 import re
 from functools import lru_cache
@@ -24,6 +25,8 @@ from pydantic import BaseModel, Field
 from app.config import get_settings
 from app.schemas import Bin, DropoffType, OnlineCheck, OnlineSource
 from app.services import rules
+
+log = logging.getLogger(__name__)
 
 UNKNOWN_ID = "unknown"
 # Require the user to pick a category below this confidence; no automatic confirmation.
@@ -271,6 +274,11 @@ def look_up(item: str) -> OnlineCheck | None:
     """Where an unlisted item goes in Ottawa, found with Google Search. None if no clear answer."""
     try:
         text, sources = ask_lookup(item)
-    except GeminiError:
+    except GeminiError as e:
+        # e.g. the key's Google Search quota is used up: the player picks the category instead
+        log.warning("Online lookup failed for %r: %s", item, e)
         return None
-    return parse_lookup(text, sources)
+    found = parse_lookup(text, sources)
+    if found is None:
+        log.info("Online lookup unsure for %r", item)
+    return found

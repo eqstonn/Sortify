@@ -52,6 +52,11 @@ def classify(
             category_id = rules.looked_up_id(online.bin)
     disposal = rules.get_disposal(category_id)
     confidence = answer.confidence
+    if not online and gemini.worth_looking_up(answer):
+        # Named but unlisted, and the lookup couldn't help: say what it is and how to file it
+        disposal = disposal.model_copy(
+            update={"name": rules.display_name(category_id, answer.item), "tips": rules.UNLISTED_TIPS}
+        )
     if online:
         disposal = disposal.model_copy(
             update={

@@ -18,7 +18,7 @@ import GlassCard, { GlassLayers } from "@/components/GlassCard";
 import GlassIconButton from "@/components/GlassIconButton";
 import PressableScale from "@/components/PressableScale";
 import Screen from "@/components/Screen";
-import { api, ApiError, type Bin, type ClassifyResult, isOtherCategory, type NextPickup } from "@/lib/api";
+import { api, ApiError, type Bin, type ClassifyResult, isOtherCategory, type NextPickup, SOMETHING_ELSE } from "@/lib/api";
 import { type DropoffState, useNearestDropoff } from "@/lib/dropoff";
 import { lastScan } from "@/lib/lastScan";
 import { showPointsToast } from "@/lib/pointsToast";
@@ -142,7 +142,9 @@ export default function Result() {
             <Text style={type.caption}>
               {result.checked_online
                 ? "Not in our list · checked online"
-                : `${capitalize(result.material)} · ${Math.round(result.confidence * 100)}% sure`}
+                : result.category_id === "unknown"
+                  ? "Not in our list" // its confidence is about "nothing fits", so a % would only confuse
+                  : `${capitalize(result.material)} · ${Math.round(result.confidence * 100)}% sure`}
             </Text>
           </View>
         </GlassCard>
@@ -173,13 +175,23 @@ export default function Result() {
               </PressableScale>
             ))}
             <PressableScale
+              onPress={() => correct(SOMETHING_ELSE)}
+              disabled={!!busy}
+              accessibilityRole="button"
+              accessibilityLabel="Something else (not recyclable)"
+              style={s.choice}
+            >
+              <View style={[s.binDot, { backgroundColor: binColors.garbage }]} />
+              <Text style={s.choiceText}>Something else (not recyclable)</Text>
+            </PressableScale>
+            <PressableScale
               onPress={() => setPicking(true)}
               disabled={!!busy}
               accessibilityRole="button"
               accessibilityLabel="Choose another category"
               style={s.choice}
             >
-              <Text style={[s.choiceText, s.choiceOther]}>Something else? See all categories</Text>
+              <Text style={[s.choiceText, s.choiceOther]}>See all categories</Text>
             </PressableScale>
           </GlassCard>
         )}
@@ -187,7 +199,9 @@ export default function Result() {
         {result.bin === "dropoff" && busy !== "correct" ? <DropoffCard type={result.dropoff_type} lookup={dropoff} /> : null}
 
         {/* Not in our list: what the online lookup found, or the City's Waste Explorer */}
-        {isOtherCategory(result.category_id) && busy !== "correct" ? <CheckedOnline check={result.checked_online} /> : null}
+        {(isOtherCategory(result.category_id) || result.category_id === "unknown") && busy !== "correct" ? (
+          <CheckedOnline check={result.checked_online} />
+        ) : null}
 
         {/* A looked-up item's only tip is the lookup's summary, already shown above */}
         {result.tips.length > 0 && !result.checked_online && (

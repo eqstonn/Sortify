@@ -20,7 +20,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.13.15 # same as our venv
       - key: GEMINI_MODEL
-        value: gemini-3.8-flash
+        value: gemini-3.5-flash-lite # 500 requests a day on the free tier (3.8 Flash: 20)
       - key: DAILY_POINT_CAP
         value: "200"
       # Secrets: Render asks for these when you create the Blueprint. Never commit them.

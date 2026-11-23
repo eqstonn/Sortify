@@ -297,3 +297,26 @@ test('"Not right?" → "Something else" marks it not recyclable and offers the W
   expect(await screen.findByText("Not in Sortify's list")).toBeTruthy();
   expect(screen.getByRole("link", { name: "Double-check in the City's Waste Explorer" })).toBeTruthy();
 });
+
+test("an unlisted item the lookup couldn't check shows its name and a direct Something else choice", async () => {
+  lastScan.set({
+    photoUri: "file:///photo.jpg",
+    result: fakeResult({
+      category_id: "unknown", name: "Pokémon trading card", material: "unknown", recyclable: false, bin: "unsure",
+      points: 0, confidence: 1, needs_review: true, item: "Pokémon trading card",
+      tips: ["This isn't in Sortify's list yet, and we couldn't check it online just now."],
+      alternatives: [{ category_id: "boxboard", name: "Boxboard", bin: "black_bin" }],
+    }),
+  });
+  mockApi.correctScan.mockResolvedValue(
+    fakeResult({ category_id: "other_garbage", name: "Pokémon trading card", material: "other", recyclable: false, bin: "garbage", points: 2, tips: ["Put it in the garbage"] }),
+  );
+
+  await render(<Result />);
+
+  expect(screen.getByText("Pokémon trading card")).toBeTruthy();
+  expect(screen.getByText("Not in our list")).toBeTruthy(); // not "Unknown · 100% sure"
+  expect(screen.getByRole("link", { name: "Double-check in the City's Waste Explorer" })).toBeTruthy();
+  await fireEvent.press(screen.getByRole("button", { name: "Something else (not recyclable)" }));
+  expect(mockApi.correctScan).toHaveBeenCalledWith("s1", { category_id: "other_garbage" });
+});

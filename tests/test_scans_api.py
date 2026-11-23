@@ -377,3 +377,17 @@ def test_something_else_marks_it_not_recyclable_and_keeps_its_name(client, auth,
     assert body["bin"] == "garbage"
     assert body["name"] == "Pokémon trading card"
     assert confirm(client, scan_id, auth).json()["points_awarded"] == 2  # garbage's usual points (corrected: no bonus)
+
+
+def test_when_the_lookup_cant_run_the_item_keeps_its_name_and_says_what_to_do(client, auth, monkeypatch):
+    answer = {"category_id": "unknown", "item": "Pokémon trading card", "confidence": 1.0, "clear_item": True}
+    monkeypatch.setattr(gemini, "ask_gemini", lambda image: json.dumps(answer))
+    # conftest.py's fake lookup fails, like a used-up search quota
+    res = client.post("/classify", files={"image": ("scan.jpg", make_photo(seed=13), "image/jpeg")}, headers=auth)
+
+    body = res.json()
+    assert body["category_id"] == "unknown"
+    assert body["name"] == "Pokémon trading card"
+    assert body["needs_review"] is True
+    assert any("Something else" in tip for tip in body["tips"])
+    assert body["checked_online"] is None

@@ -61,9 +61,18 @@ def looked_up_id(bin: Bin) -> str:
     return f"{LOOKED_UP}{bin.value}"
 
 
+# For an item Gemini could name but that isn't in our list, when the online lookup
+# couldn't help either (unsure, or the search unavailable)
+UNLISTED_TIPS = [
+    "This isn't in Sortify's list yet, and we couldn't check it online just now.",
+    "If it isn't one of the suggestions, choose \"Something else\": that marks it as not recyclable.",
+]
+
+
 def display_name(category_id: str, item: str) -> str:
-    """What the result screen calls it: the category name, or for other_* items what Gemini saw."""
-    if is_looked_up(category_id) and item.strip() and item.strip().lower() != "unknown":
+    """What the result screen calls it: the category name, or what Gemini saw for
+    items not in the list (other_* and unknown) when it could name them."""
+    if (is_looked_up(category_id) or category_id == UNKNOWN.category_id) and item.strip() and item.strip().lower() != "unknown":
         cleaned = item.strip()
         return cleaned[0].upper() + cleaned[1:]
     return get_disposal(category_id).name
