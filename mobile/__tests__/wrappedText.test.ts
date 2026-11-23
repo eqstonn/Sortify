@@ -3,7 +3,8 @@
 import { kgText, plural } from "@/lib/format";
 import { materialLabel } from "@/lib/materials";
 import {
-  busiestDayText, comparedToAverage, introLine, monthName, rarityLine, shareMessage, withArticle, wrappedMonths,
+  busiestDayText, comparedToAverage, introLine, kgComparison, monthName, rarityLine, shareMessage, storyCards, topShare,
+  withArticle, wrappedMonths,
 } from "@/lib/wrapped";
 
 import { fakeWrapped } from "@/test-utils/fixtures";
@@ -70,4 +71,22 @@ test("material labels", () => {
   expect(materialLabel("electronics")).toBe("E-waste");
   expect(materialLabel("plastic")).toBe("Plastic");
   expect(materialLabel("textiles")).toBe("Textiles");
+});
+
+test("the story skips cards with nothing to show", () => {
+  expect(storyCards(fakeWrapped())).toEqual(["intro", "total", "material", "rarest", "kg", "rank", "summary"]);
+  expect(storyCards(fakeWrapped({ rarest_find: null, top_materials: [] }))).toEqual(["intro", "total", "kg", "rank", "summary"]);
+});
+
+test("kg comparisons pick something about the right size", () => {
+  expect(kgComparison(9.2)).toBe("That's about 2 watermelons");
+  expect(kgComparison(4)).toBe("That's about a watermelon");
+  expect(kgComparison(2.4)).toBe("That's about 2 pineapples");
+  expect(kgComparison(0.45)).toBe("That's about 2 apples");
+  expect(kgComparison(0.05)).toBe("That's about an apple");
+});
+
+test("top material share", () => {
+  expect(topShare(fakeWrapped())).toBe(36); // plastic: 31 of 86
+  expect(topShare(fakeWrapped({ top_materials: [] }))).toBe(0);
 });

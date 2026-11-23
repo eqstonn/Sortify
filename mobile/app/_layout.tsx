@@ -1,5 +1,5 @@
 import { DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
-import { Outfit_400Regular, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
+import { Outfit_400Regular, Outfit_600SemiBold, Outfit_700Bold, Outfit_800ExtraBold, Outfit_900Black } from "@expo-google-fonts/outfit";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -21,6 +21,8 @@ export default function RootLayout() {
     Outfit_400Regular,
     Outfit_600SemiBold,
     Outfit_700Bold,
+    Outfit_800ExtraBold, // Wrapped
+    Outfit_900Black, // Wrapped
     DMSans_500Medium,
     DMSans_600SemiBold,
     DMSans_700Bold,

@@ -4,6 +4,3 @@ __pycache__/
 .pytest_cache/
 node_modules/
 .expo/
-
-# The old 7-stage plant art (about 70 MB), no longer used
-mobile/assets/plant/originals/

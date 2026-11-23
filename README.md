@@ -4,6 +4,17 @@ Scan an item, find out which Ottawa bin it goes in, and earn points. Backend: Fa
 
 Demo day? See [DEMO.md](DEMO.md).
 
+## What's in the app
+
+- **Sign in:** email + password or Google (Supabase Auth), with Remember me and Forgot password. Optional profile photo.
+- **Home:** a plant that grows through 4 levels as you earn points, your points and level, items this week, streak, Ottawa rank, the "Up next" pickup, and Discover weekly (a tricky item with bonus points).
+- **Scan:** photo → item, Ottawa bin, prep tips and points. "I recycled it" awards the points; "Not right?" lets you pick the right item. Drop-off items (electronics, batteries, hazardous) show the nearest drop-off site with Google Maps directions.
+- **Board:** this week / all time leaderboard for Ottawa.
+- **Wrapped:** your month as 5 story cards.
+- **Me:** profile, stats, "What you sort", badges, sign out.
+
+The look follows the mockups in `mobile/assets/redesign/` (light theme only).
+
 ## 1. Set up Supabase (once)
 
 1. In the Supabase dashboard, open **SQL Editor**. Paste each file in `supabase/migrations/` and click **Run**, in order: `001_init.sql`, `002_schedule.sql`, `003_badges.sql`, `004_leaderboard_items.sql`, `005_auth.sql`. A missing migration shows up as a "Server error: Could not find the table…" message in the app.
@@ -44,7 +55,9 @@ In `mobile/.env`, set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLI
 | Your phone, backend on your laptop | the cloudflared URL (below) |
 | Your phone, backend on Render | `https://sortify-api.onrender.com` (your Render URL) |
 
-Expo reads `.env` only when it starts, so restart with `npx expo start --clear` after changing it. Then scan the QR code with the Camera app (iPhone) or Expo Go (Android).
+Expo reads `.env` only when it starts, so restart with `npx expo start --clear` after changing it. Then scan the QR code with the Camera app (iPhone) or Expo Go (Android), or press `w` for the browser (http://localhost:8081).
+
+The app opens on **Sign in**: tap **Create an account**, or use Google. Google sign-in and the emailed links (confirm email, reset password) only work once Supabase and Google are set up (step 1.2, [docs/AUTH_SETUP.md](docs/AUTH_SETUP.md)). On a wide browser window the app shows as a phone-sized column in the middle.
 
 ### Phone + laptop backend (cloudflared)
 
@@ -89,12 +102,13 @@ python -m scripts.smoke_test <url> --photo can.jpg
 
 Rerunning `seed` refreshes the fake players' month up to today, so "This week" always has data. It only touches its own `seed-NN@example.com` logins, never real players.
 
-### Plant art
+### Plant art and icons
 
 The plant art originals are `mobile/assets/redesign/Stage-N-transparent.png` (4 stages, one per level). After changing them, rebuild the smaller copies the app uses and commit those:
 
 ```bash
 python -m scripts.build_plant_assets    # writes mobile/assets/plant/stage-1..4.png
+python -m scripts.build_icons           # app icons + browser-tab icon from the logo's arrows
 ```
 
 ## Run the tests
@@ -103,6 +117,7 @@ python -m scripts.build_plant_assets    # writes mobile/assets/plant/stage-1..4.
 pytest                    # backend: Gemini and Supabase are faked (tests/fakes.py), so free and offline
 cd mobile && npm test     # app screens with the API mocked
 cd mobile && npm run typecheck
+cd mobile && npm run lint
 ```
 
 ## Layout
@@ -117,7 +132,8 @@ app/
   db.py              the only code that talks to Supabase
   deps.py            login token -> user id, or 401
 data/                categories, drop-off sites, holiday shifts, Discover weekly (JSON)
-mobile/              the Expo app (app/ = screens, components/, lib/api.ts = typed API client)
+mobile/              the Expo app (app/ = screens, components/, lib/api.ts = typed API client, theme.ts = colours and fonts)
+docs/                AUTH_SETUP (login setup), ACCURACY_LOOP, BUILD_PLAN, mockups
 scripts/
   seed.py            fake players for the demo
   smoke_test.py      checks a live backend
@@ -137,7 +153,7 @@ tests/               pytest
 2. `images.py` shrinks it and strips EXIF, so no GPS location leaves the server.
 3. `gemini.py` asks Gemini to pick one category id from `data/categories.json` (enforced by a JSON schema). Made-up ids become `unknown`; confidence under 0.70 requires user review before confirmation.
 4. `rules.py` looks up the bin, points and tips for that id. Gemini never decides the bin.
-5. For drop-off items (batteries, electronics, hazardous) the nearest site is added if a location was sent.
+5. For drop-off items (batteries, electronics, hazardous), the result screen asks for the phone's location, gets the nearest site that takes that item from `GET /dropoffs/nearest` (sites in `data/dropoff_sites.json`), and its **Directions** button opens Google Maps. Without location it offers a Google Maps search instead.
 
 ## Endpoints
 
@@ -167,6 +183,7 @@ tests/               pytest
 - A corrected scan is worth at most 10 points, so relabelling junk as a battery doesn't pay.
 - The same photo (even resized) never earns points twice, for anyone. We compare perceptual hashes.
 - There's a daily cap (`DAILY_POINT_CAP`, default 200), counted in Ottawa time.
+- The plant's level comes from total points (`app/services/levels.py`): Sprout 0, Seedling 50, Sapling 100, Young Tree 200. Kept low so the plant visibly grows during a demo.
 - The confirm-once rule and the cap run inside the `award_points` database function in one transaction, so two taps at once can't cheat it. Only the backend can call that function.
 
 ## Checking accuracy and the Ottawa data

@@ -12,6 +12,19 @@ import type { TextStyle } from "react-native";
 
 import type { Bin } from "@/lib/api";
 
+/** Sortify Wrapped's poster colours: the theme's greens and terracotta, cream, sage and a marigold accent. */
+export type WrappedPalette = {
+  forest: string;
+  deep: string;
+  terracotta: string;
+  clay: string;
+  cream: string;
+  sage: string;
+  marigold: string;
+  creamFaint: string;
+  inkFaint: string;
+};
+
 export type Palette = {
   // ---- page ----
   page: string; // screen background
@@ -54,7 +67,7 @@ export type Palette = {
   avatarFg: string;
 
   // ---- shared by every screen ----
-  background: string; // behind everything (same as page)
+  background: string; // behind everything: on a wide browser window, the plain area either side of the app column
   text: string;
   textMuted: string;
   textFaint: string; // placeholders and disabled text only
@@ -74,7 +87,7 @@ export type Palette = {
   glassBorder: string;
   glassInner: string;
   blurTint: BlurTint;
-  wrapped: string[]; // tint over each Wrapped card: intro, total, material, rarest, rank
+  wrapped: WrappedPalette; // Sortify Wrapped's poster colours
 };
 
 // Sampled from the mockups
@@ -114,7 +127,7 @@ const colors: Palette = {
   avatarBg: "#C4C8C1",
   avatarFg: "#FFFFFF",
 
-  background: "#F0EFE7",
+  background: "#E2E0D6", // a shade darker than page, so the app column reads as a phone screen
   text: "#1F3D2A",
   textMuted: "#5B6B5F", // 4.9:1 on the page, 5.5:1 on cards
   textFaint: "#7D887F",
@@ -133,13 +146,17 @@ const colors: Palette = {
   glassBorder: "rgba(43, 58, 36, 0.25)",
   glassInner: "rgba(255, 253, 247, 0.7)",
   blurTint: "light",
-  wrapped: [
-    "rgba(31, 107, 58, 0.1)",
-    "rgba(47, 125, 79, 0.16)",
-    "rgba(37, 99, 166, 0.14)",
-    "rgba(196, 106, 69, 0.16)",
-    "rgba(31, 107, 58, 0.06)",
-  ],
+  wrapped: {
+    forest: "#1F3D2A",
+    deep: "#13291E",
+    terracotta: "#A9573B",
+    clay: "#8E4529", // a darker terracotta, for the rank card's checker
+    cream: "#F4EEDC",
+    sage: "#9DB88A",
+    marigold: "#F2B33D", // the one bright accent
+    creamFaint: "rgba(244, 238, 220, 0.35)", // progress bar tracks on dark cards
+    inkFaint: "rgba(19, 41, 30, 0.22)", // ... and on light cards
+  },
 };
 
 // Result card colour per bin: the answer is always a solid block.
@@ -156,10 +173,9 @@ export const onBin = "#FFFFFF"; // text on a bin colour
 export const onBinSoft = "rgba(255, 255, 255, 0.18)"; // the icon square on a bin card
 export const onBinEdge = "rgba(255, 255, 255, 0.25)"; // the bin card's 1px edge
 
-// Board podium rings: gold, silver, bronze
-export const podiumColors = ["#E2B23C", "#B9C2BC", "#CF9064"];
 
 // Loaded in app/_layout.tsx with these names.
+// (Wrapped also uses fonts.poster, the heaviest Outfit, for its oversized type.)
 // Outfit: headings, numbers, buttons. DM Sans: everything else.
 export const fonts = {
   heading: "Outfit_600SemiBold",
@@ -169,6 +185,8 @@ export const fonts = {
   // Older names, still used by Wrapped and the scan screens until they're restyled
   light: "Outfit_400Regular",
   extrabold: "Outfit_700Bold",
+  poster: "Outfit_900Black",
+  posterBold: "Outfit_800ExtraBold",
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };

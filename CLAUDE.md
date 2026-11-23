@@ -75,7 +75,8 @@ requirements: fastapi, uvicorn, pydantic-settings, python-multipart, google-gena
 
 ## UI style ("cozy garden", light only)
 
-The mockups in `mobile/assets/redesign/` are the source of truth for the look (2x images: halve pixel sizes). The redesign is being rolled out screen by screen; Wrapped, scan and result still use the older glass pieces until their step.
+The mockups in `mobile/assets/redesign/` are the source of truth for the look (2x images: halve pixel sizes). The redesign is being rolled out screen by screen; scan and result still use the older glass pieces until their step.
+- Wrapped is its own poster style (`components/WrappedStory.tsx` + `components/wrapped/`): full-bleed colour cards from `colors.wrapped` (forest, terracotta, cream, sage, marigold), Outfit Black type (`fonts.poster`), animated with moti/reanimated (`<Rise>`, `<Loop>`, `<Move>`, `<CountUp>` in `wrapped/motion.tsx`, all still under Reduce Motion). Cards auto-advance every 3 s; tap left/right; hold to pause. Jest needs `transformIgnorePatterns` for moti and reanimated's `jest/resolver` (package.json).
 
 - Beige page with soft corner blobs (`Backdrop`, SVG), cream "chunky" cards: `#FFFDF7` fill, 1.5 pt dark-green edge, 24 pt corners, a solid band straight below (`boxShadow` with no blur). Deep green `#1F3D2A` and terracotta `#A9573B` accents; green/terracotta surfaces are vertical gradients with a 1 pt lighter top line (`Card tone=...`).
 - Fonts: Outfit (headings, numbers, buttons) and DM Sans (body), loaded in `app/_layout.tsx`. Icons: `lucide-react-native` (on a gradient, wrap an icon in a `<View>` or the browser paints it under the gradient).

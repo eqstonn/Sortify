@@ -57,3 +57,36 @@ export function shareMessage(w: WrappedOut): string {
     `about ${kgText(w.kg)} kept out of landfill${rank}. ♻️`
   );
 }
+
+// ---------- the story (components/WrappedStory.tsx) ----------
+
+export type CardId = "intro" | "total" | "material" | "rarest" | "kg" | "rank" | "summary";
+
+/** The cards to show, in order. Material and rarest find only when there's something to say. */
+export function storyCards(w: WrappedOut): CardId[] {
+  const cards: CardId[] = ["intro", "total"];
+  if (w.top_materials.length > 0) cards.push("material");
+  if (w.rarest_find) cards.push("rarest");
+  cards.push("kg", "rank", "summary");
+  return cards;
+}
+
+// Rough weights, for a picture of how much that is
+const THINGS = [
+  { kg: 5, one: "watermelon", many: "watermelons" },
+  { kg: 1, one: "pineapple", many: "pineapples" },
+  { kg: 0.2, one: "apple", many: "apples" },
+];
+
+/** 9.2 -> "That's about 2 watermelons", 0.15 -> "That's about an apple" */
+export function kgComparison(kg: number): string {
+  const thing = THINGS.find((t) => kg >= t.kg * 0.75) ?? THINGS[THINGS.length - 1];
+  const count = Math.max(1, Math.round(kg / thing.kg));
+  return count === 1 ? `That's about ${withArticle(thing.one).toLowerCase()}` : `That's about ${count} ${thing.many}`;
+}
+
+/** The top material's share of everything sorted: 31 of 86 -> 36 */
+export function topShare(w: WrappedOut): number {
+  const top = w.top_materials[0];
+  return top && w.items > 0 ? Math.round((100 * top.count) / w.items) : 0;
+}

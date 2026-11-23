@@ -1,9 +1,11 @@
-// The Wrapped tab with the API and navigation faked.
+// The Wrapped tab with the API and navigation faked: the story's cards,
+// auto-advance, tap and hold controls, sharing, and the empty/error states.
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
-import { Share } from "react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { AccessibilityInfo, Share } from "react-native";
 
 import Wrapped from "@/app/(tabs)/wrapped";
+import { CARD_MS } from "@/components/WrappedStory";
 import { api, ApiError } from "@/lib/api";
 import { wrappedMonths } from "@/lib/wrapped";
 
@@ -30,89 +32,122 @@ beforeEach(() => {
   mockApi.wrapped.mockResolvedValue(fakeWrapped());
 });
 
+afterEach(() => jest.useRealTimers());
+
 const press = (name: string) => fireEvent.press(screen.getByRole("button", { name }));
-const onCard = (n: number) => expect(screen.getByLabelText(`Card ${n} of 5`)).toBeTruthy();
+const onCard = (id: string, n: number, of = 7) => {
+  expect(screen.getByTestId(`wrapped-${id}`)).toBeTruthy();
+  expect(screen.getByLabelText(`Card ${n} of ${of}`)).toBeTruthy();
+};
 
-test("opens on the intro card for this month", async () => {
+async function openStory() {
   await render(<Wrapped />);
+  await screen.findByTestId("wrapped-intro");
+}
 
-  expect(await screen.findByText("SORTIFY WRAPPED · OCTOBER")).toBeTruthy();
-  onCard(1);
+test("opens on the intro for this month", async () => {
+  await openStory();
+
+  onCard("intro", 1);
+  expect(screen.getByText("SORTIFY WRAPPED · OCTOBER 2026")).toBeTruthy();
+  expect(screen.getByText("bin.")).toBeTruthy();
   expect(screen.getByText("86 items. 5 materials. 1,240 points.")).toBeTruthy();
   const { year, month } = wrappedMonths(new Date())[0];
   expect(mockApi.wrapped).toHaveBeenCalledWith(year, month);
 });
 
-test("pages forward through all five cards and back again", async () => {
-  await render(<Wrapped />);
-  await screen.findByText("SORTIFY WRAPPED · OCTOBER");
+test("tapping the right steps through all seven cards, with the data on each", async () => {
+  await openStory();
 
-  await press("Let's go");
-  onCard(2);
-  expect(screen.getByText("This month you sorted")).toBeTruthy();
-  expect(screen.getByText("86")).toBeTruthy();
-  expect(screen.getByText("about 9.2 kg")).toBeTruthy();
-  expect(
-    screen.getByText("kept out of landfill. That's more than double what the average Sortify user sorted."),
-  ).toBeTruthy();
+  await press("Next card");
+  onCard("total", 2);
+  expect(screen.getByLabelText("86 items")).toBeTruthy(); // the counting number says its final value
+  expect(screen.getByText("and 1,240 points earned")).toBeTruthy();
 
-  await press("Next");
-  onCard(3);
-  expect(screen.getByText("Your top material was")).toBeTruthy();
-  expect(screen.getAllByText("Plastic")).toHaveLength(2); // the big word and row 1
-  expect(screen.getByText("31 items")).toBeTruthy();
-  expect(screen.getByText("E-waste")).toBeTruthy(); // "electronics" from the backend
+  await press("Next card");
+  onCard("material", 3);
+  expect(screen.getAllByText("PLASTIC")).toHaveLength(4);
+  expect(screen.getByText("31 items · 36% of everything")).toBeTruthy();
+  expect(screen.getByText("Then Paper, Metal, Glass")).toBeTruthy();
 
-  await press("Next");
-  onCard(4);
+  await press("Next card");
+  onCard("rarest", 4);
+  expect(screen.getByText("Battery")).toBeTruthy();
   expect(screen.getByText("An old laptop battery")).toBeTruthy();
-  expect(
-    screen.getByText(
-      "Only 2% of Sortify users recycled one this month. It never goes in a bin, and you took it to a drop-off. Nice.",
-    ),
-  ).toBeTruthy();
+  expect(screen.getByText("Only 2% of Sortify users recycled one this month.")).toBeTruthy();
 
-  await press("Next");
-  onCard(5);
-  expect(screen.getByText("#8 in Ottawa")).toBeTruthy();
-  expect(screen.getByText("Maya R. · 3,480 pts")).toBeTruthy();
-  expect(screen.getByText("Sundays")).toBeTruthy();
+  await press("Next card");
+  onCard("kg", 5);
+  expect(screen.getByLabelText("9.2 kg")).toBeTruthy();
+  expect(screen.getByText("That's about 2 watermelons")).toBeTruthy();
+
+  await press("Next card");
+  onCard("rank", 6);
+  expect(screen.getByText("#8")).toBeTruthy();
+  expect(screen.getByText("of 120 players")).toBeTruthy();
+  expect(screen.getByText("Top recycler: Maya R. · 3,480 pts")).toBeTruthy();
+
+  await press("Next card");
+  onCard("summary", 7);
+  expect(screen.getByText("OCTOBER")).toBeTruthy();
   expect(screen.getByText("11 days")).toBeTruthy();
-  // The last card has Share and Done instead of Back/Next (mockup 10); swipe to go back
-  expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+  expect(screen.getByText("Sundays")).toBeTruthy();
+
+  await press("Next card"); // nothing after the last card
+  onCard("summary", 7);
 });
 
-test("Back steps back one card at a time", async () => {
-  await render(<Wrapped />);
-  await screen.findByText("SORTIFY WRAPPED · OCTOBER");
-  await press("Let's go");
-  await press("Next");
-  await press("Next");
-  onCard(4);
+test("tapping the left goes back, and stops at the first card", async () => {
+  await openStory();
+  await press("Next card");
+  await press("Next card");
 
-  await press("Back");
-  onCard(3);
-  await press("Back");
-  onCard(2);
-  await press("Back");
-  onCard(1);
-  expect(screen.getByRole("button", { name: "Let's go" })).toBeTruthy();
+  await press("Previous card");
+  onCard("total", 2);
+  await press("Previous card");
+  await press("Previous card");
+  onCard("intro", 1);
 });
 
-async function goToLastCard() {
-  await render(<Wrapped />);
-  await screen.findByText("SORTIFY WRAPPED · OCTOBER");
-  await press("Let's go");
-  for (let i = 0; i < 3; i++) await press("Next");
-  onCard(5);
+test("each card moves on by itself after 3 seconds, but the last one stays", async () => {
+  jest.useFakeTimers();
+  await openStory();
+
+  await act(async () => jest.advanceTimersByTime(CARD_MS));
+  onCard("total", 2);
+  // Each card starts its own timer once it's on screen, so step 3 s at a time
+  for (let i = 0; i < 8; i++) await act(async () => jest.advanceTimersByTime(CARD_MS));
+  onCard("summary", 7);
+});
+
+test("holding pauses the story, and letting go carries on", async () => {
+  jest.useFakeTimers();
+  await openStory();
+  const zone = screen.getByRole("button", { name: "Next card" });
+
+  await act(async () => jest.advanceTimersByTime(1000));
+  await fireEvent(zone, "longPress");
+  await act(async () => jest.advanceTimersByTime(CARD_MS * 3));
+  onCard("intro", 1); // held: no advance
+
+  await fireEvent(zone, "pressOut");
+  await act(async () => jest.advanceTimersByTime(CARD_MS - 1000 - 50));
+  onCard("intro", 1); // picks up where it left off: ~2 s still to go
+  await act(async () => jest.advanceTimersByTime(100));
+  onCard("total", 2);
+});
+
+async function goToSummary() {
+  await openStory();
+  for (let i = 0; i < 6; i++) await press("Next card");
+  onCard("summary", 7);
 }
 
-test("the share button on the last card shares a summary", async () => {
+test("Share on the summary shares a sentence about the month", async () => {
   const share = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction", activityType: undefined });
-  await goToLastCard();
+  await goToSummary();
 
-  await press("Share your Wrapped");
+  await press("Share");
 
   expect(share).toHaveBeenCalledWith({
     message: "My October on Sortify: 86 items sorted, about 9.2 kg kept out of landfill, #8 in Ottawa. ♻️",
@@ -120,7 +155,7 @@ test("the share button on the last card shares a summary", async () => {
 });
 
 test("Done and the close button go back Home", async () => {
-  await goToLastCard();
+  await goToSummary();
   await press("Done");
   expect(router.navigate).toHaveBeenCalledWith("/");
 
@@ -128,12 +163,33 @@ test("Done and the close button go back Home", async () => {
   expect(router.navigate).toHaveBeenCalledTimes(2);
 });
 
-test("you are the top recycler", async () => {
+test("no rarest find: that card is skipped", async () => {
+  mockApi.wrapped.mockResolvedValue(fakeWrapped({ rarest_find: null }));
+  await openStory();
+
+  for (let i = 0; i < 3; i++) await press("Next card");
+  onCard("kg", 4, 6);
+});
+
+test("you are the top recycler, and #1 gets YOU on the podium", async () => {
   mockApi.wrapped.mockResolvedValue(
     fakeWrapped({ rank: 1, top_recycler: { user_id: "me", name: "Sam", avatar: "fox", points: 1240, is_me: true } }),
   );
-  await goToLastCard();
-  expect(screen.getByText("You! · 1,240 pts")).toBeTruthy();
+  await openStory();
+  for (let i = 0; i < 5; i++) await press("Next card");
+
+  onCard("rank", 6);
+  expect(screen.getByText("Top recycler: You! · 1,240 pts")).toBeTruthy();
+  expect(screen.getByText("YOU")).toBeTruthy();
+});
+
+test("with Reduce Motion on, numbers show their final value straight away", async () => {
+  jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockResolvedValue(true);
+  await openStory();
+  await press("Next card");
+
+  expect(screen.getByTestId("total-count")).toHaveTextContent("86");
+  jest.restoreAllMocks();
 });
 
 test("an empty month falls back to last month", async () => {
@@ -144,7 +200,7 @@ test("an empty month falls back to last month", async () => {
 
   await render(<Wrapped />);
 
-  expect(await screen.findByLabelText("Card 1 of 5")).toBeTruthy();
+  expect(await screen.findByTestId("wrapped-intro")).toBeTruthy();
   expect(mockApi.wrapped).toHaveBeenLastCalledWith(lastMonth.year, lastMonth.month);
 });
 
@@ -154,7 +210,7 @@ test("nothing sorted in either month shows a friendly empty state", async () => 
   await render(<Wrapped />);
 
   expect(await screen.findByText("Sort a few items and your monthly recap fills in here.")).toBeTruthy();
-  expect(screen.queryByLabelText("Card 1 of 5")).toBeNull();
+  expect(screen.queryByTestId("wrapped-intro")).toBeNull();
 });
 
 test("a failed load shows the message and can retry", async () => {
@@ -164,5 +220,5 @@ test("a failed load shows the message and can retry", async () => {
 
   expect(await screen.findByText("Can't reach Sortify. Check your connection and try again.")).toBeTruthy();
   await press("Try again");
-  expect(await screen.findByLabelText("Card 1 of 5")).toBeTruthy();
+  expect(await screen.findByTestId("wrapped-intro")).toBeTruthy();
 });

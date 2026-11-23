@@ -1,293 +1,177 @@
-// The five Sortify Wrapped story cards: intro, total, top material, rarest
-// find, rank. Each is a big glass panel over the backdrop with its own tint.
-// Back/Next buttons or a sideways swipe move between them; the bars at the
-// top show where you are.
+// Sortify Wrapped as a story: full-screen poster cards (components/wrapped/cards.tsx)
+// with segmented progress bars at the top.
+//   - Each card moves on by itself after 3 seconds (except the last).
+//   - Tap the left third to go back, anywhere else to go forward.
+//   - Hold anywhere to pause; let go to carry on.
+// The last card is a summary poster with Share and Done.
 
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { ShareIcon } from "lucide-react-native";
-import { type ReactNode, useMemo, useState } from "react";
-import { Image, PanResponder, Share, StyleSheet, Text, View } from "react-native";
+import { setStatusBarStyle } from "expo-status-bar";
+import { useFocusEffect } from "expo-router";
+import { ShareIcon, X } from "lucide-react-native";
+import { type ComponentType, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, Share, StyleSheet, useWindowDimensions, View } from "react-native";
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ActionButton from "@/components/ActionButton";
-import Avatar, { avatarUri } from "@/components/Avatar";
-import { binLabel } from "@/components/BinCard";
-import GlassCard from "@/components/GlassCard";
-import GlassIconButton from "@/components/GlassIconButton";
 import Screen, { useNavSpace } from "@/components/Screen";
-import type { RarestFind, WrappedOut } from "@/lib/api";
-import { kgText, plural } from "@/lib/format";
-import { materialLabel } from "@/lib/materials";
-import { plantArt, STAGES } from "@/lib/plant";
-import { makeStyles, useTheme } from "@/lib/theme";
 import {
-  busiestDayText, comparedToAverage, introLine, monthName, rarityLine, shareMessage, withArticle,
-} from "@/lib/wrapped";
-import { fonts, layout, podiumColors, radius, spacing } from "@/theme";
+  type CardProps, IntroCard, KgCard, MaterialCard, RankCard, RarestCard, SummaryCard, TotalCard,
+} from "@/components/wrapped/cards";
+import { StillContext } from "@/components/wrapped/motion";
+import type { WrappedOut } from "@/lib/api";
+import { useTheme } from "@/lib/theme";
+import { useReduceMotion } from "@/lib/useReduceMotion";
+import { type CardId, shareMessage, storyCards } from "@/lib/wrapped";
+import { layout } from "@/theme";
 
-const CARDS = 5;
-const SWIPE_DISTANCE = 50;
+export const CARD_MS = 3000;
 
-// Icon in the circle on the rarest-find card
-const RARE_ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
-  battery: "battery-60",
-  electronics: "cellphone",
-  light_bulb: "lightbulb-outline",
-  paint_chemical: "spray-bottle",
-  propane_tank: "gas-cylinder",
-  aerosol_can: "spray",
+// light: a pale card, so the bars, the close button and the status bar are dark
+const CARDS: Record<CardId, { Card: ComponentType<CardProps>; light: boolean }> = {
+  intro: { Card: IntroCard, light: false },
+  total: { Card: TotalCard, light: true },
+  material: { Card: MaterialCard, light: true },
+  rarest: { Card: RarestCard, light: false },
+  kg: { Card: KgCard, light: true },
+  rank: { Card: RankCard, light: false },
+  summary: { Card: SummaryCard, light: false },
 };
 
 export default function WrappedStory({ data, onClose }: { data: WrappedOut; onClose: () => void }) {
-  const [page, setPage] = useState(0);
-  const month = monthName(data.month);
+  const ids = useMemo(() => storyCards(data), [data]);
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const still = useReduceMotion();
+  const insets = useSafeAreaInsets();
   const navSpace = useNavSpace();
-  const { colors } = useTheme();
-  const s = useStyles();
+  const { width, height } = useWindowDimensions();
+  const P = useTheme().colors.wrapped;
 
-  // setPage with a function, so the swipe handler made once still sees the current page
-  const next = () => setPage((p) => Math.min(p + 1, CARDS - 1));
-  const back = () => setPage((p) => Math.max(p - 1, 0));
-  const swipe = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy),
-        onPanResponderRelease: (_, g) => {
-          if (g.dx < -SWIPE_DISTANCE) setPage((p) => Math.min(p + 1, CARDS - 1));
-          if (g.dx > SWIPE_DISTANCE) setPage((p) => Math.max(p - 1, 0));
-        },
-      }),
-    [],
+  const id = ids[index];
+  const { Card, light } = CARDS[id];
+  const last = index === ids.length - 1;
+  const ink = light ? P.deep : P.cream;
+  const size = { w: Math.min(width, layout.maxContent), h: height };
+  const inset = { top: insets.top + 64, bottom: navSpace };
+
+  const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(to, ids.length - 1))), [ids.length]);
+
+  // The 3-second clock. Pausing keeps what's left, so letting go carries on from there.
+  const clock = useRef({ index: -1, left: CARD_MS, since: 0 });
+  useEffect(() => {
+    if (clock.current.index !== index) clock.current = { index, left: CARD_MS, since: 0 };
+    if (paused || last) return;
+    clock.current.since = Date.now();
+    const timer = setTimeout(() => go(index + 1), clock.current.left);
+    return () => {
+      clearTimeout(timer);
+      clock.current.left -= Date.now() - clock.current.since;
+    };
+  }, [index, paused, last, go]);
+
+  // Status bar icons light on dark cards, dark on pale ones; back to dark when you leave
+  useFocusEffect(
+    useCallback(() => {
+      setStatusBarStyle(light ? "dark" : "light");
+      return () => setStatusBarStyle("dark");
+    }, [light]),
   );
+
+  // Hold to pause: a long press pauses, and letting go (after a long press) resumes
+  const held = useRef(false);
+  const zone = (step: number) => ({
+    onPress: () => go(index + step),
+    onLongPress: () => {
+      held.current = true;
+      setPaused(true);
+    },
+    onPressOut: () => {
+      if (held.current) {
+        held.current = false;
+        setPaused(false);
+      }
+    },
+    delayLongPress: 220,
+  });
 
   const share = () => Share.share({ message: shareMessage(data) }).catch(() => {});
 
-  const cards = [
-    <Intro key="intro" data={data} month={month} />,
-    <Total key="total" data={data} />,
-    <TopMaterial key="material" data={data} />,
-    <Rarest key="rarest" find={data.rarest_find} />,
-    <Rank key="rank" data={data} />,
-  ];
-
   return (
-    <Screen>
-      <View style={[s.screen, { paddingBottom: navSpace }]} {...swipe.panHandlers}>
-        <View style={s.progress} accessibilityLabel={`Card ${page + 1} of ${CARDS}`}>
-          {cards.map((_, i) => (
-            <View key={i} style={[s.segment, i <= page && s.segmentDone]} />
-          ))}
+    <StillContext.Provider value={still}>
+      <Screen edges={[]}>
+        <View style={styles.fill} testID={`wrapped-${id}`}>
+          {/* key: a new card mounts fresh, so its entrance plays every time you land on it */}
+          <Card key={id} data={data} size={size} inset={inset} />
+
+          <View style={styles.zones}>
+            <Pressable style={styles.back} accessibilityRole="button" accessibilityLabel="Previous card" {...zone(-1)} />
+            <Pressable style={styles.forward} accessibilityRole="button" accessibilityLabel="Next card" {...zone(1)} />
+          </View>
+
+          <View style={[styles.top, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
+            <Progress count={ids.length} index={index} running={!paused} light={light} />
+            <View style={styles.closeRow} pointerEvents="box-none">
+              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} style={styles.close}>
+                <X size={26} color={ink} strokeWidth={2.5} />
+              </Pressable>
+            </View>
+          </View>
+
+          {last ? (
+            <View style={[styles.actions, { bottom: navSpace }]}>
+              <ActionButton variant="secondary" label="Done" onPress={onClose} style={styles.done} />
+              <ActionButton variant="accent" label="Share" icon={ShareIcon} onPress={share} style={styles.share} />
+            </View>
+          ) : null}
         </View>
-        <View style={s.header}>
-          <Text style={s.eyebrow}>SORTIFY WRAPPED · {month.toUpperCase()}</Text>
-          <GlassIconButton icon="x" label="Close" onPress={onClose} size={40} />
+      </Screen>
+    </StillContext.Provider>
+  );
+}
+
+/** One bar per card: done ones full, the current one filling over 3 s, the rest empty. */
+function Progress({ count, index, running, light }: { count: number; index: number; running: boolean; light: boolean }) {
+  const P = useTheme().colors.wrapped;
+  const fill = useSharedValue(0);
+
+  useEffect(() => {
+    fill.set(0);
+  }, [index, fill]);
+  useEffect(() => {
+    if (running) fill.set(withTiming(1, { duration: (1 - fill.get()) * CARD_MS, easing: Easing.linear }));
+    else cancelAnimation(fill);
+  }, [running, index, fill]);
+
+  const current = useAnimatedStyle(() => ({ width: `${fill.get() * 100}%` }));
+  const track = light ? P.inkFaint : P.creamFaint;
+  const bar = light ? P.deep : P.cream;
+
+  return (
+    <View style={styles.bars} accessible accessibilityLabel={`Card ${index + 1} of ${count}`}>
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={[styles.bar, { backgroundColor: track }]}>
+          {i < index ? <View style={[styles.barFill, styles.full, { backgroundColor: bar }]} /> : null}
+          {i === index ? <Animated.View style={[styles.barFill, { backgroundColor: bar }, current]} /> : null}
         </View>
-
-        <GlassCard style={s.panel}>
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.wrapped[page] }]} />
-          <View style={s.body}>{cards[page]}</View>
-        </GlassCard>
-
-        {page === 0 && <ActionButton label="Let's go" onPress={next} />}
-        {page > 0 && page < CARDS - 1 && (
-          <View style={s.buttons}>
-            <ActionButton variant="glass" label="Back" onPress={back} style={s.grow} />
-            <ActionButton label="Next" onPress={next} style={s.grow} />
-          </View>
-        )}
-        {page === CARDS - 1 && (
-          <View style={s.buttons}>
-            <ActionButton variant="glass" label="Done" onPress={onClose} style={s.grow} />
-            <ActionButton label="Share your Wrapped" icon={ShareIcon} onPress={share} style={s.share} />
-          </View>
-        )}
-      </View>
-    </Screen>
+      ))}
+    </View>
   );
 }
 
-// ---------- the five cards ----------
-
-function Intro({ data, month }: { data: WrappedOut; month: string }) {
-  const s = useStyles();
-  return (
-    <>
-      <Text style={s.hero}>
-        Your{"\n"}
-        {month},{"\n"}
-        <Text style={s.heroAccent}>sorted.</Text>
-      </Text>
-      <Text style={s.lead}>{introLine(data)}</Text>
-      <View style={s.plant}>
-        <Image source={plantArt(STAGES).poster} style={s.plantImage} accessibilityIgnoresInvertColors />
-      </View>
-    </>
-  );
-}
-
-function Total({ data }: { data: WrappedOut }) {
-  const s = useStyles();
-  return (
-    <>
-      <Text style={s.lead}>This month you sorted</Text>
-      <Text style={s.giant}>{data.items.toLocaleString()}</Text>
-      <Text style={s.lead}>{data.items === 1 ? "item" : "items"}</Text>
-      <Inner>
-        <Text style={s.panelTitle}>about {kgText(data.kg)}</Text>
-        <Text style={s.small}>kept out of landfill. {comparedToAverage(data)}</Text>
-      </Inner>
-    </>
-  );
-}
-
-function TopMaterial({ data }: { data: WrappedOut }) {
-  const s = useStyles();
-  const [top] = data.top_materials;
-  if (!top) return <Text style={s.lead}>No materials yet this month.</Text>;
-  return (
-    <>
-      <Text style={s.lead}>Your top material was</Text>
-      <Text style={s.big}>{materialLabel(top.material)}</Text>
-      <Text style={s.small}>
-        {plural(top.count, "item")}. Most sorted: {top.top_items.join(" and ")}
-      </Text>
-      <View style={s.list}>
-        {data.top_materials.map((m, i) => (
-          <Inner key={m.material} row>
-            <Text style={s.listNumber}>{i + 1}</Text>
-            <Text style={s.listLabel}>{materialLabel(m.material)}</Text>
-            <Text style={s.listCount}>{plural(m.count, "item")}</Text>
-          </Inner>
-        ))}
-      </View>
-    </>
-  );
-}
-
-function Rarest({ find }: { find: RarestFind | null }) {
-  const { colors } = useTheme();
-  const s = useStyles();
-  if (!find) return <Text style={s.lead}>No rare finds this month.</Text>;
-  const where =
-    find.bin === "dropoff"
-      ? "It never goes in a bin, and you took it to a drop-off. Nice."
-      : `It goes in the ${binLabel(find.bin).toLowerCase()}. Nice sorting.`;
-  return (
-    <>
-      <Text style={s.lead}>Your rarest find</Text>
-      <View style={s.rareCircle}>
-        <MaterialCommunityIcons name={RARE_ICONS[find.category_id] ?? "star-four-points"} size={68} color={colors.accent} />
-      </View>
-      <Text style={s.big}>{withArticle(find.item)}</Text>
-      <Text style={s.small}>
-        {rarityLine(find.percent_of_players)} {where}
-      </Text>
-    </>
-  );
-}
-
-function Rank({ data }: { data: WrappedOut }) {
-  const s = useStyles();
-  const top = data.top_recycler;
-  return (
-    <>
-      <Text style={s.lead}>You finished the month</Text>
-      {data.rank ? (
-        <Text style={s.rank}>
-          #{data.rank} <Text style={s.rankCity}>in Ottawa</Text>
-        </Text>
-      ) : (
-        <Text style={s.big}>Keep sorting to get ranked</Text>
-      )}
-      {top && (
-        <Inner row>
-          <Avatar uri={avatarUri(top.avatar)} size={44} ring ringWidth={2} ringColor={podiumColors[0]} />
-          <View>
-            <Text style={s.tileLabel}>TOP RECYCLER</Text>
-            <Text style={s.tileValue}>
-              {top.is_me ? "You!" : top.name} · {top.points.toLocaleString()} pts
-            </Text>
-          </View>
-        </Inner>
-      )}
-      <View style={s.tiles}>
-        <Inner style={s.tile}>
-          <Text style={s.tileLabel}>BUSIEST DAY</Text>
-          <Text style={s.tileValue}>{busiestDayText(data.busiest_day)}</Text>
-        </Inner>
-        <Inner style={s.tile}>
-          <Text style={s.tileLabel}>LONGEST STREAK</Text>
-          <Text style={s.tileValue}>{plural(data.longest_streak, "day")}</Text>
-        </Inner>
-      </View>
-    </>
-  );
-}
-
-// A lighter box inside the card, for stats and list rows
-function Inner({ children, row, style }: { children: ReactNode; row?: boolean; style?: object }) {
-  const s = useStyles();
-  return <View style={[s.inner, row && s.innerRow, style]}>{children}</View>;
-}
-
-const useStyles = makeStyles(({ colors }) => ({
-  screen: { flex: 1, paddingHorizontal: layout.gutter, gap: spacing.md },
-  progress: { flexDirection: "row", gap: 4, marginTop: spacing.md },
-  segment: { flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.track },
-  segmentDone: { backgroundColor: colors.text },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  eyebrow: { fontFamily: fonts.extrabold, fontSize: 11, letterSpacing: 0.8, color: colors.text },
-
-  panel: { flex: 1, padding: spacing.xl },
-  body: { flex: 1, justifyContent: "center", gap: spacing.md },
-
-  hero: { fontFamily: fonts.extrabold, fontSize: 44, lineHeight: 48, color: colors.text },
-  heroAccent: { color: colors.accent },
-  giant: { fontFamily: fonts.light, fontSize: 110, lineHeight: 120, letterSpacing: -3, color: colors.text },
-  big: { fontFamily: fonts.extrabold, fontSize: 36, lineHeight: 42, color: colors.text },
-  lead: { fontFamily: fonts.semibold, fontSize: 18, color: colors.text },
-  small: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 19, color: colors.textMuted },
-
-  // 12 px boxes inside the card's 24 px padding: separate surfaces, own radius
-  inner: {
-    backgroundColor: colors.glassInner,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    borderRadius: radius.inner,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  innerRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  panelTitle: { fontFamily: fonts.light, fontSize: 30, lineHeight: 36, color: colors.text },
-
-  list: { gap: spacing.sm, marginTop: spacing.sm },
-  listNumber: { fontFamily: fonts.extrabold, fontSize: 15, width: 22, color: colors.accent },
-  listLabel: { fontFamily: fonts.bold, fontSize: 15, flex: 1, color: colors.text },
-  listCount: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
-
-  rareCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: colors.glassInner,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: spacing.md,
-  },
-
-  rank: { fontFamily: fonts.light, fontSize: 72, lineHeight: 80, color: colors.text },
-  rankCity: { fontFamily: fonts.bold, fontSize: 26 },
-  tiles: { flexDirection: "row", gap: spacing.sm },
-  tile: { flex: 1 },
-  tileLabel: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.8, color: colors.textMuted },
-  tileValue: { fontFamily: fonts.extrabold, fontSize: 17, color: colors.text },
-
-  plant: { alignSelf: "center", marginTop: spacing.md, borderRadius: radius.card, overflow: "hidden", borderWidth: 1, borderColor: colors.glassBorder },
-  plantImage: { width: 170, height: 170 },
-
-  buttons: { flexDirection: "row", gap: spacing.sm },
-  grow: { flex: 1 },
-  share: { flex: 2 },
-}));
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  zones: { ...StyleSheet.absoluteFill, flexDirection: "row" },
+  back: { flex: 1 },
+  forward: { flex: 2 },
+  top: { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: 12, gap: 8 },
+  bars: { flexDirection: "row", gap: 5 },
+  bar: { flex: 1, height: 4, borderRadius: 2, overflow: "hidden" },
+  barFill: { height: "100%", borderRadius: 2 },
+  full: { width: "100%" },
+  closeRow: { flexDirection: "row", justifyContent: "flex-end" },
+  close: { padding: 6 },
+  actions: { position: "absolute", left: 20, right: 20, flexDirection: "row", gap: 10 },
+  done: { flex: 1 },
+  share: { flex: 1.4 },
+});
