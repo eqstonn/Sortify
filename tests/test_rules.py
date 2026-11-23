@@ -21,6 +21,8 @@ def test_every_category_is_complete():
 
 def test_dropoff_categories_say_which_kind():
     for c in rules.load_categories().values():
+        if c.id == "other_dropoff":
+            continue  # the online lookup says which kind, item by item
         if c.bin == Bin.DROPOFF:
             assert c.dropoff_type is not None, c.id
         else:
@@ -122,3 +124,26 @@ def test_distance_is_sane():
     # Parliament Hill to Ottawa airport is about 11 km
     km = rules.distance_km(45.4236, -75.7009, 45.3225, -75.6692)
     assert 10 < km < 13
+
+
+# ---------- looked-up items (other_*) ----------
+
+
+def test_one_other_category_per_bin_worth_that_bins_usual_points():
+    cats = rules.load_categories()
+    expected = {Bin.BLUE: 10, Bin.BLACK: 8, Bin.GREEN: 8, Bin.GARBAGE: 2, Bin.DROPOFF: 35}
+    for bin_, points in expected.items():
+        c = cats[rules.looked_up_id(bin_)]
+        assert c.bin == bin_
+        assert c.points == points
+
+
+def test_gemini_never_picks_an_other_category_from_a_photo():
+    assert not [cid for cid in rules.category_ids() if cid.startswith("other_")]
+    assert "aluminum_can" in rules.category_ids()
+
+
+def test_display_name_uses_what_gemini_saw_for_other_items():
+    assert rules.display_name("other_garbage", "pokémon trading card") == "Pokémon trading card"
+    assert rules.display_name("other_garbage", "unknown") == "Not recyclable"
+    assert rules.display_name("aluminum_can", "Coke can") == "Aluminum can"

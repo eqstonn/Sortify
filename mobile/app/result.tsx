@@ -12,12 +12,13 @@ import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-n
 import ActionButton from "@/components/ActionButton";
 import BinCard from "@/components/BinCard";
 import CategoryPicker from "@/components/CategoryPicker";
+import CheckedOnline from "@/components/CheckedOnline";
 import DropoffCard from "@/components/DropoffCard";
 import GlassCard, { GlassLayers } from "@/components/GlassCard";
 import GlassIconButton from "@/components/GlassIconButton";
 import PressableScale from "@/components/PressableScale";
 import Screen from "@/components/Screen";
-import { api, ApiError, type Bin, type ClassifyResult, type NextPickup } from "@/lib/api";
+import { api, ApiError, type Bin, type ClassifyResult, isOtherCategory, type NextPickup } from "@/lib/api";
 import { type DropoffState, useNearestDropoff } from "@/lib/dropoff";
 import { lastScan } from "@/lib/lastScan";
 import { showPointsToast } from "@/lib/pointsToast";
@@ -139,7 +140,9 @@ export default function Result() {
             </View>
             <Text style={s.itemName}>{result.name}</Text>
             <Text style={type.caption}>
-              {capitalize(result.material)} · {Math.round(result.confidence * 100)}% sure
+              {result.checked_online
+                ? "Not in our list · checked online"
+                : `${capitalize(result.material)} · ${Math.round(result.confidence * 100)}% sure`}
             </Text>
           </View>
         </GlassCard>
@@ -183,7 +186,11 @@ export default function Result() {
 
         {result.bin === "dropoff" && busy !== "correct" ? <DropoffCard type={result.dropoff_type} lookup={dropoff} /> : null}
 
-        {result.tips.length > 0 && (
+        {/* Not in our list: what the online lookup found, or the City's Waste Explorer */}
+        {isOtherCategory(result.category_id) && busy !== "correct" ? <CheckedOnline check={result.checked_online} /> : null}
+
+        {/* A looked-up item's only tip is the lookup's summary, already shown above */}
+        {result.tips.length > 0 && !result.checked_online && (
           <GlassCard>
             <Text style={type.heading}>Before it goes in</Text>
             {result.tips.map((tip, i) => (

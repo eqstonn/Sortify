@@ -1,4 +1,5 @@
-// "Not right?": a searchable list of every category, so the player can say what it really was.
+// "Not right?": a searchable list of every category, so the player can say what it really was,
+// plus "Something else" at the end for things that aren't in the list (marked not recyclable).
 
 import { Feather } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -9,7 +10,7 @@ import { GlassLayers } from "@/components/GlassCard";
 import GlassIconButton from "@/components/GlassIconButton";
 import PressableScale from "@/components/PressableScale";
 import Screen from "@/components/Screen";
-import { api, ApiError, type Category } from "@/lib/api";
+import { api, ApiError, type Category, isOtherCategory, SOMETHING_ELSE } from "@/lib/api";
 import { makeStyles, useTheme } from "@/lib/theme";
 import { binColors, fonts, layout, radius, spacing } from "@/theme";
 
@@ -36,7 +37,9 @@ export default function CategoryPicker({ visible, onPick, onClose }: Props) {
 
   const query = search.trim().toLowerCase();
   const shown = (categories ?? []).filter(
-    (c) => !query || c.name.toLowerCase().includes(query) || c.examples.some((e) => e.toLowerCase().includes(query)),
+    (c) =>
+      !isOtherCategory(c.id) && // only used for looked-up items; "Something else" below covers them
+      (!query || c.name.toLowerCase().includes(query) || c.examples.some((e) => e.toLowerCase().includes(query))),
   );
 
   return (
@@ -69,6 +72,22 @@ export default function CategoryPicker({ visible, onPick, onClose }: Props) {
             keyExtractor={(c) => c.id}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={s.list}
+            ListFooterComponent={
+              <PressableScale
+                onPress={() => onPick(SOMETHING_ELSE)}
+                style={s.row}
+                accessibilityRole="button"
+                accessibilityLabel="Something else (not recyclable)"
+              >
+                <GlassLayers />
+                <View style={[s.dot, { backgroundColor: binColors.garbage }]} />
+                <View style={s.rowText}>
+                  <Text style={type.body}>Something else</Text>
+                  <Text style={type.caption}>Not in the list: marks it as not recyclable</Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.textMuted} />
+              </PressableScale>
+            }
             renderItem={({ item }) => (
               <PressableScale onPress={() => onPick(item.id)} style={s.row} accessibilityRole="button" accessibilityLabel={item.name}>
                 <GlassLayers />

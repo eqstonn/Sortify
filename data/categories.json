@@ -1,5 +1,5 @@
 {
-  "_note": "Ottawa curbside rules. Entries with verify=true still need a teammate to check against ottawa.ca.",
+  "_note": "Ottawa curbside rules. Entries with verify=true still need a teammate to check against ottawa.ca. The other_* categories at the end are never offered to Gemini's photo step: a scan is filed under one when the item isn't in the list and a Google Search lookup (services/gemini.py) found its bin. Their points are each bin's usual points.",
   "categories": [
     {
       "id": "aluminum_can",
@@ -568,6 +568,81 @@
         "BBQ propane tank",
         "camping cylinder"
       ],
+      "verify": false
+    },
+    {
+      "id": "other_blue_bin",
+      "name": "Other blue bin item",
+      "material": "other",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.1,
+      "tips": [
+        "Rinse it and put it in the blue bin"
+      ],
+      "examples": [],
+      "verify": false
+    },
+    {
+      "id": "other_black_bin",
+      "name": "Other black bin item",
+      "material": "other",
+      "bin": "black_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.1,
+      "tips": [
+        "Put it in the black bin"
+      ],
+      "examples": [],
+      "verify": false
+    },
+    {
+      "id": "other_green_bin",
+      "name": "Other green bin item",
+      "material": "other",
+      "bin": "green_bin",
+      "dropoff_type": null,
+      "points": 8,
+      "rarity": "common",
+      "kg_estimate": 0.1,
+      "tips": [
+        "Put it in the green bin"
+      ],
+      "examples": [],
+      "verify": false
+    },
+    {
+      "id": "other_garbage",
+      "name": "Not recyclable",
+      "material": "other",
+      "bin": "garbage",
+      "dropoff_type": null,
+      "points": 2,
+      "rarity": "common",
+      "kg_estimate": 0.1,
+      "tips": [
+        "Put it in the garbage"
+      ],
+      "examples": [],
+      "verify": false
+    },
+    {
+      "id": "other_dropoff",
+      "name": "Other drop-off item",
+      "material": "other",
+      "bin": "dropoff",
+      "dropoff_type": null,
+      "points": 35,
+      "rarity": "uncommon",
+      "kg_estimate": 0.1,
+      "tips": [
+        "Not curbside: take it to a drop-off site"
+      ],
+      "examples": [],
       "verify": false
     }
   ]

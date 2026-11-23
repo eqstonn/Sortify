@@ -1,6 +1,6 @@
 // The result screen with the API and navigation faked.
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { Alert, Linking, StyleSheet } from "react-native";
 
 import Home from "@/app/(tabs)/index";
@@ -244,4 +244,56 @@ test("curbside items don't ask for your location", async () => {
 
   expect(jest.requireMock("expo-location").requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   expect(screen.queryByTestId("dropoff-card")).toBeNull();
+});
+
+// ---------- items that aren't in Sortify's list ----------
+
+const CARD_LOOKUP = {
+  bin: "garbage" as const,
+  dropoff_type: null,
+  summary: "Trading cards are plastic-coated, so they go in the garbage.",
+  sources: [{ title: "Waste Explorer", url: "https://ottawa.ca/wasteexplorer/cards" }],
+};
+
+test("an item looked up online shows what was found, its sources, and the Waste Explorer", async () => {
+  lastScan.set({
+    photoUri: "file:///photo.jpg",
+    result: fakeResult({
+      category_id: "other_garbage", name: "Pokémon trading card", material: "other", recyclable: false,
+      bin: "garbage", points: 2, tips: [CARD_LOOKUP.summary], item: "Pokémon trading card", checked_online: CARD_LOOKUP,
+    }),
+  });
+  const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+
+  await render(<Result />);
+
+  expect(screen.getByText("Pokémon trading card")).toBeTruthy();
+  expect(screen.getByText("Not in our list · checked online")).toBeTruthy();
+  expect(within(screen.getByTestId("checked-online")).getByText(CARD_LOOKUP.summary)).toBeTruthy();
+  expect(screen.getAllByText(CARD_LOOKUP.summary)).toHaveLength(1); // not repeated as a prep step
+  await fireEvent.press(screen.getByRole("link", { name: "Waste Explorer" }));
+  expect(open).toHaveBeenCalledWith("https://ottawa.ca/wasteexplorer/cards");
+  await fireEvent.press(screen.getByRole("link", { name: "Double-check in the City's Waste Explorer" }));
+  expect(open).toHaveBeenLastCalledWith("https://ottawa.ca/wasteexplorer");
+  open.mockRestore();
+});
+
+test('"Not right?" → "Something else" marks it not recyclable and offers the Waste Explorer', async () => {
+  mockApi.categories.mockResolvedValue([
+    { id: "boxboard", name: "Boxboard", material: "paper", bin: "black_bin", dropoff_type: null, points: 8, rarity: "common", kg_estimate: 0.1, tips: ["Flatten it"], examples: [], verify: false },
+    { id: "other_garbage", name: "Not recyclable", material: "other", bin: "garbage", dropoff_type: null, points: 2, rarity: "common", kg_estimate: 0.1, tips: ["Put it in the garbage"], examples: [], verify: false },
+  ]);
+  mockApi.correctScan.mockResolvedValue(
+    fakeResult({ category_id: "other_garbage", name: "Pokémon trading card", material: "other", recyclable: false, bin: "garbage", points: 2, tips: ["Put it in the garbage"] }),
+  );
+
+  await render(<Result />);
+  await fireEvent.press(screen.getByRole("button", { name: "Not right?" }));
+  expect(await screen.findByRole("button", { name: "Boxboard" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Not recyclable" })).toBeNull(); // the other_* entries are hidden
+  await fireEvent.press(screen.getByRole("button", { name: "Something else (not recyclable)" }));
+
+  expect(mockApi.correctScan).toHaveBeenCalledWith("s1", { category_id: "other_garbage" });
+  expect(await screen.findByText("Not in Sortify's list")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Double-check in the City's Waste Explorer" })).toBeTruthy();
 });

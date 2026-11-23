@@ -12,7 +12,18 @@ from PIL import Image
 
 from app.db import get_db
 from app.main import create_app
+from app.services import gemini
 from tests.fakes import FakeDB
+
+
+@pytest.fixture(autouse=True)
+def no_web_lookups(monkeypatch):
+    """Tests never search the web: the online lookup fails unless a test fakes an answer."""
+
+    def offline(item: str):
+        raise gemini.GeminiError("web lookups are faked in tests")
+
+    monkeypatch.setattr(gemini, "ask_lookup", offline)
 
 
 @pytest.fixture

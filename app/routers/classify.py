@@ -41,8 +41,27 @@ def classify(
         log.warning("Gemini error: %s", e)
         raise HTTPException(502, "The scanner is having trouble right now. Try again in a moment.")
 
-    # The bin comes from our rules, never from Gemini's own words
-    disposal = rules.get_disposal(answer.category_id)
+    # The bin comes from our rules, never from Gemini's own words...
+    category_id = answer.category_id
+    online = None
+    if gemini.worth_looking_up(answer):
+        # ...except for an item that isn't in our list: then a Google Search lookup picks
+        # one of our bins, and the scan is filed under that bin's other_* category
+        online = gemini.look_up(answer.item)
+        if online:
+            category_id = rules.looked_up_id(online.bin)
+    disposal = rules.get_disposal(category_id)
+    confidence = answer.confidence
+    if online:
+        disposal = disposal.model_copy(
+            update={
+                "name": rules.display_name(category_id, answer.item),
+                "tips": [online.summary],
+                "dropoff_type": online.dropoff_type or disposal.dropoff_type,
+            }
+        )
+        # The bin was found, so no review is needed before "I recycled it" (confirm checks this)
+        confidence = max(confidence, gemini.REVIEW_CONFIDENCE)
 
     nearest = None
     if disposal.dropoff_type and lat is not None and lon is not None:
@@ -52,14 +71,14 @@ def classify(
     scan = db.insert_scan(
         {
             "user_id": user_id,
-            "category_id": answer.category_id,
+            "category_id": category_id,
             "item": answer.item,
-            "confidence": answer.confidence,
+            "confidence": confidence,
             "image_hash": points.photo_hash(photo),
         }
     )
 
-    review = answer.confidence < gemini.REVIEW_CONFIDENCE or answer.category_id == gemini.UNKNOWN_ID
+    review = online is None and (answer.confidence < gemini.REVIEW_CONFIDENCE or answer.category_id == gemini.UNKNOWN_ID)
     choices = [
         CategoryChoice(category_id=cid, name=rules.get_disposal(cid).name, bin=rules.get_disposal(cid).bin)
         for cid in answer.alternatives
@@ -68,9 +87,10 @@ def classify(
     return ClassifyResult(
         **disposal.model_dump(),
         item=answer.item,
-        confidence=answer.confidence,
+        confidence=confidence,
         scan_id=scan["id"],
         nearest_dropoff=nearest,
         needs_review=review,
         alternatives=choices,
+        checked_online=online,
     )

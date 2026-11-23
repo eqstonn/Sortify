@@ -65,9 +65,6 @@ function Screens() {
             {/* The centre nav button opens the camera over everything */}
             <Stack.Screen name="scan" options={{ presentation: "fullScreenModal" }} />
             <Stack.Screen name="result" />
-            {/* Dev-only component preview. Must be in a guarded group: signed out, the app
-                opens the first route file it may show, and "design" sorts before "sign-in". */}
-            <Stack.Screen name="design" />
           </Stack.Protected>
           <Stack.Protected guard={state === "signedOut"}>
             <Stack.Screen name="sign-in" />

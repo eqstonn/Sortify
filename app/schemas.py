@@ -77,6 +77,22 @@ class CategoryChoice(BaseModel):
     bin: Bin
 
 
+class OnlineSource(BaseModel):
+    """A web page Gemini's Google Search lookup used."""
+
+    title: str
+    url: str
+
+
+class OnlineCheck(BaseModel):
+    """An item that isn't in our list, looked up online (services/gemini.look_up)."""
+
+    bin: Bin  # never "unsure": those lookups are dropped
+    dropoff_type: DropoffType | None = None
+    summary: str  # one sentence: where it goes and why
+    sources: list[OnlineSource] = Field(default_factory=list)
+
+
 class ClassifyResult(Disposal):
     """Response of POST /classify: everything the result screen shows."""
 
@@ -86,6 +102,7 @@ class ClassifyResult(Disposal):
     nearest_dropoff: NearestDropoff | None = None
     needs_review: bool = False
     alternatives: list[CategoryChoice] = Field(default_factory=list)
+    checked_online: OnlineCheck | None = None  # set when the bin came from an online lookup
 
 
 class ScanStatus(str, Enum):

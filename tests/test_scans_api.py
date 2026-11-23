@@ -7,7 +7,7 @@ import pytest
 
 from app.config import load_settings
 from app.main import create_app
-from app.schemas import DiscoverItem
+from app.schemas import DiscoverItem, OnlineSource
 from app.services import discover, gemini
 from tests.conftest import make_photo
 
@@ -277,3 +277,103 @@ def test_my_scans_newest_first_and_only_mine(client, db, auth, scan):
     assert rows[1]["status"] == "confirmed"
     assert rows[1]["points_awarded"] == 25
     assert rows[1]["bin"] == "blue_bin"
+
+
+# ---------- items that aren't in our list ----------
+
+
+def lookup_says(monkeypatch, reply: str | None):
+    """Fake the Google Search lookup (None: it finds nothing)."""
+    sources = [OnlineSource(title="Waste Explorer", url="https://ottawa.ca/wasteexplorer")]
+    monkeypatch.setattr(gemini, "ask_lookup", lambda item: (reply or "", sources))
+
+
+def scan_card(client, monkeypatch, headers, reply, clear_item=True, seed=7):
+    answer = {"category_id": "unknown", "item": "Pokémon trading card", "confidence": 0.4, "clear_item": clear_item}
+    monkeypatch.setattr(gemini, "ask_gemini", lambda image: json.dumps(answer))
+    lookup_says(monkeypatch, reply)
+    files = {"image": ("scan.jpg", make_photo(seed=seed), "image/jpeg")}
+    return client.post("/classify", files=files, headers=headers)
+
+
+GARBAGE = '{"bin": "garbage", "summary": "Trading cards are plastic-coated, so they go in the garbage."}'
+
+
+def test_unlisted_item_is_looked_up_online_and_filed_under_its_bin(client, db, auth, monkeypatch):
+    res = scan_card(client, monkeypatch, auth, GARBAGE)
+
+    body = res.json()
+    assert body["category_id"] == "other_garbage"
+    assert body["name"] == "Pokémon trading card"
+    assert body["bin"] == "garbage"
+    assert body["needs_review"] is False
+    assert body["tips"] == ["Trading cards are plastic-coated, so they go in the garbage."]
+    assert body["checked_online"]["sources"] == [{"title": "Waste Explorer", "url": "https://ottawa.ca/wasteexplorer"}]
+    assert db.scans[body["scan_id"]]["category_id"] == "other_garbage"
+
+
+def test_a_looked_up_item_can_be_confirmed_for_its_bins_usual_points(client, auth, monkeypatch):
+    blue = '{"bin": "blue_bin", "summary": "Rinse it and put it in the blue bin."}'
+    scan_id = scan_card(client, monkeypatch, auth, blue).json()["scan_id"]
+
+    res = confirm(client, scan_id, auth)
+
+    assert res.status_code == 200
+    assert res.json()["points_awarded"] == 10 + 15  # blue bin's usual 10, plus the first-time bonus
+
+
+def test_when_the_lookup_is_unsure_the_player_picks_as_before(client, auth, monkeypatch):
+    body = scan_card(client, monkeypatch, auth, '{"bin": "unsure", "summary": "No clear rule."}').json()
+
+    assert body["category_id"] == "unknown"
+    assert body["needs_review"] is True
+    assert body["checked_online"] is None
+
+
+def test_no_lookup_for_a_blurry_or_crowded_photo(client, auth, monkeypatch):
+    # The lookup would say garbage; with no clear item it's never asked, so the scan stays unknown
+    body = scan_card(client, monkeypatch, auth, GARBAGE, clear_item=False).json()
+
+    assert body["category_id"] == "unknown"
+    assert body["needs_review"] is True
+
+
+def test_a_listed_item_is_never_looked_up(client, auth, scan, monkeypatch):
+    calls = []
+    monkeypatch.setattr(gemini, "ask_lookup", lambda item: calls.append(item) or ("", []))
+
+    scan("aluminum_can", auth)
+
+    assert calls == []
+
+
+def test_looked_up_dropoff_finds_the_nearest_site_for_its_kind(client, auth, monkeypatch):
+    reply = '{"bin": "dropoff", "dropoff_type": "batteries", "summary": "Take vape batteries to a battery drop-off."}'
+    answer = {"category_id": "unknown", "item": "disposable vape", "confidence": 0.5, "clear_item": True}
+    monkeypatch.setattr(gemini, "ask_gemini", lambda image: json.dumps(answer))
+    lookup_says(monkeypatch, reply)
+
+    res = client.post(
+        "/classify",
+        files={"image": ("scan.jpg", make_photo(seed=9), "image/jpeg")},
+        data={"lat": 45.42, "lon": -75.69},
+        headers=auth,
+    )
+
+    body = res.json()
+    assert body["category_id"] == "other_dropoff"
+    assert body["dropoff_type"] == "batteries"
+    assert "batteries" in body["nearest_dropoff"]["site"]["accepts"]
+
+
+def test_something_else_marks_it_not_recyclable_and_keeps_its_name(client, auth, scan, gemini_says):
+    gemini_says("boxboard", item="Pokémon trading card")
+    photo = make_photo(seed=11)
+    scan_id = client.post("/classify", files={"image": ("scan.jpg", photo, "image/jpeg")}, headers=auth).json()["scan_id"]
+
+    res = client.post(f"/scans/{scan_id}/correct", json={"category_id": "other_garbage"}, headers=auth)
+
+    body = res.json()
+    assert body["bin"] == "garbage"
+    assert body["name"] == "Pokémon trading card"
+    assert confirm(client, scan_id, auth).json()["points_awarded"] == 2  # garbage's usual points (corrected: no bonus)

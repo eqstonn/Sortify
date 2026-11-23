@@ -41,9 +41,32 @@ def load_sites() -> list[DropoffSite]:
     return [DropoffSite(**s) for s in raw["sites"]]
 
 
+# Items not in our list whose bin was looked up online are filed under
+# other_<bin> (other_garbage, other_blue_bin, ...), worth that bin's usual points.
+LOOKED_UP = "other_"
+
+
 def category_ids() -> list[str]:
-    """The fixed list Gemini must choose from (phase 2)."""
-    return list(load_categories())
+    """The fixed list Gemini must choose from when it looks at a photo (not the other_* ones)."""
+    return [cid for cid in load_categories() if not is_looked_up(cid)]
+
+
+def is_looked_up(category_id: str) -> bool:
+    """True for the other_* categories (bin found by an online lookup, or "something else")."""
+    return category_id.startswith(LOOKED_UP)
+
+
+def looked_up_id(bin: Bin) -> str:
+    """Bin.GARBAGE -> "other_garbage" """
+    return f"{LOOKED_UP}{bin.value}"
+
+
+def display_name(category_id: str, item: str) -> str:
+    """What the result screen calls it: the category name, or for other_* items what Gemini saw."""
+    if is_looked_up(category_id) and item.strip() and item.strip().lower() != "unknown":
+        cleaned = item.strip()
+        return cleaned[0].upper() + cleaned[1:]
+    return get_disposal(category_id).name
 
 
 def get_disposal(category_id: str) -> Disposal:

@@ -70,6 +70,31 @@ export interface CategoryChoice {
   bin: Bin;
 }
 
+/** A web page the online lookup used. */
+export interface OnlineSource {
+  title: string;
+  url: string;
+}
+
+/** An item that isn't in Sortify's list, whose bin Gemini looked up with Google Search. */
+export interface OnlineCheck {
+  bin: Bin;
+  dropoff_type: DropoffType | null;
+  summary: string; // one sentence: where it goes and why
+  sources: OnlineSource[];
+}
+
+/** Category ids for items that aren't in the list: other_garbage, other_blue_bin, ... */
+export function isOtherCategory(categoryId: string): boolean {
+  return categoryId.startsWith("other_");
+}
+
+/** "Not right?" → "Something else": not recyclable */
+export const SOMETHING_ELSE = "other_garbage";
+
+/** The City of Ottawa's own "which bin?" search. */
+export const WASTE_EXPLORER_URL = "https://ottawa.ca/wasteexplorer";
+
 export interface ClassifyResult extends Disposal {
   item: string; // what Gemini saw, e.g. "Coke can"
   confidence: number; // 0 to 1
@@ -77,6 +102,7 @@ export interface ClassifyResult extends Disposal {
   nearest_dropoff: NearestDropoff | null;
   needs_review: boolean;
   alternatives: CategoryChoice[];
+  checked_online?: OnlineCheck | null; // set when the bin came from an online lookup
 }
 
 export interface ScanOut {

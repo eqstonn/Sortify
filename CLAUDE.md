@@ -70,7 +70,7 @@ requirements: fastapi, uvicorn, pydantic-settings, python-multipart, google-gena
 ## Rules
 
 - **Anti-cheat:** points are only awarded on confirm, capped per day, and never twice for the same photo (perceptual hash). Points update through the `award_points` DB function in one step.
-- **Gemini must pick from the fixed category list.** The bin comes from `data/categories.json`, not from Gemini's free text.
+- **Gemini must pick from the fixed category list.** The bin comes from `data/categories.json`, not from Gemini's free text. One exception: when nothing in the list fits but Gemini can name the item (a Pokémon card), `gemini.look_up()` asks Gemini with Google Search for the Ottawa rule, and it must answer with one of our 5 bins (anything else is dropped). The scan is filed under `other_<bin>` (in categories.json, never offered for photos), worth that bin's usual points, and the result shows "Checked online" with sources and a Waste Explorer link. "Not right?" → "Something else" files it as `other_garbage`. Tests fake the lookup (`conftest.py` makes it fail unless a test fakes an answer).
 - **Secrets:** never commit `.env`. `.env.example` lists the names with no values.
 
 ## UI style ("cozy garden", light only)
@@ -81,7 +81,7 @@ The mockups in `mobile/assets/redesign/` are the source of truth for the look (2
 - Beige page with soft corner blobs (`Backdrop`, SVG), cream "chunky" cards: `#FFFDF7` fill, 1.5 pt dark-green edge, 24 pt corners, a solid band straight below (`boxShadow` with no blur). Deep green `#1F3D2A` and terracotta `#A9573B` accents; green/terracotta surfaces are vertical gradients with a 1 pt lighter top line (`Card tone=...`).
 - Fonts: Outfit (headings, numbers, buttons) and DM Sans (body), loaded in `app/_layout.tsx`. Icons: `lucide-react-native` (on a gradient, wrap an icon in a `<View>` or the browser paints it under the gradient).
 - One theme, no dark mode: `mobile/theme.ts` holds the palette; components never use raw colours, they use `useTheme()` / `makeStyles()` from `mobile/lib/theme.tsx`.
-- Shared pieces: `Screen` (backdrop + safe area + 500 px column cap, wider than any phone so sheets reach the screen edges), `Card`, `SheetPanel`, `ActionButton`, `TextField`, `Pill`, `ProgressBar`, `Avatar` (photo or grey default person), `Logo` (renders the SVG file), `IconTile`, `HeroSheet` (art behind a sheet that scrolls over it; pulling down drags the art along so the cut-off pot never shows), `NavBar` (floating green pill: Home, Board, raised terracotta Scan, Wrapped, Me), `PressableScale`. In dev builds, Me has a "Design system (dev)" button (`app/design.tsx`).
+- Shared pieces: `Screen` (backdrop + safe area + 500 px column cap, wider than any phone so sheets reach the screen edges), `Card`, `SheetPanel`, `ActionButton`, `TextField`, `Pill`, `ProgressBar`, `Avatar` (photo or grey default person), `Logo` (renders the SVG file), `IconTile`, `HeroSheet` (art behind a sheet that scrolls over it; pulling down drags the art along so the cut-off pot never shows), `NavBar` (floating green pill: Home, Board, raised terracotta Scan, Wrapped, Me), `PressableScale`.
 - The result's bin card stays a solid block in the bin's colour.
 
 ## Plant art

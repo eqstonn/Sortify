@@ -4,7 +4,6 @@
 // Sign out at the bottom. From GET /me and GET /scans/me. Layout: assets/redesign "Profile".
 
 import { Image } from "expo-image";
-import { router } from "expo-router";
 import {
   Flame, Globe, Leaf, Lock, LogOut, type LucideIcon, Pencil, Smartphone, Sparkle, Sprout, Star, Wine,
 } from "lucide-react-native";
@@ -168,9 +167,6 @@ export default function Me() {
         </View>
 
         <ActionButton variant="secondary" icon={LogOut} label="Sign out" onPress={signOut} style={s.signOut} />
-        {__DEV__ ? (
-          <ActionButton variant="secondary" label="Design system (dev)" onPress={() => router.push("/design")} style={s.dev} />
-        ) : null}
       </HeroSheet>
 
       <EditProfileSheet
@@ -292,5 +288,4 @@ const useStyles = makeStyles(({ colors, type }) => ({
   badgeNameLocked: { color: colors.textMuted },
 
   signOut: { marginTop: 28 },
-  dev: { marginTop: 14 },
 }));

@@ -152,7 +152,8 @@ tests/               pytest
 1. The app uploads a photo to `POST /classify` (plus optional `lat`/`lon`).
 2. `images.py` shrinks it and strips EXIF, so no GPS location leaves the server.
 3. `gemini.py` asks Gemini to pick one category id from `data/categories.json` (enforced by a JSON schema). Made-up ids become `unknown`; confidence under 0.70 requires user review before confirmation.
-4. `rules.py` looks up the bin, points and tips for that id. Gemini never decides the bin.
+4. `rules.py` looks up the bin, points and tips for that id. Gemini doesn't decide the bin for listed items.
+   If nothing in the list fits but Gemini can name the item (e.g. a Pokémon card), a second Gemini call with Google Search looks up the Ottawa rule and must answer with one of the 5 bins. The scan is filed under that bin's `other_*` category (that bin's usual points), and the app shows "Checked online" with the sources and a link to the City's Waste Explorer. If the search is unsure or unavailable, the person picks the category as before. "Not right?" also has "Something else", which marks it not recyclable.
 5. For drop-off items (batteries, electronics, hazardous), the result screen asks for the phone's location, gets the nearest site that takes that item from `GET /dropoffs/nearest` (sites in `data/dropoff_sites.json`), and its **Directions** button opens Google Maps. Without location it offers a Google Maps search instead.
 
 ## Endpoints

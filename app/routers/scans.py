@@ -105,6 +105,8 @@ def correct(
     if disposal.dropoff_type and body.lat is not None and body.lon is not None:
         nearest = rules.nearest_dropoff(body.lat, body.lon, disposal.dropoff_type)
 
+    # "Something else / not recyclable" (other_garbage) keeps the item's own name
+    disposal = disposal.model_copy(update={"name": rules.display_name(body.category_id, scan["item"])})
     return ClassifyResult(
         **disposal.model_dump(exclude={"points"}),
         points=points.points_for(body.category_id, corrected=True, first_time=False),
