@@ -125,6 +125,7 @@ scripts/
   dev_seed_month.py  a month of scans for one account
   eval_classifier.py Gemini accuracy on real photos (tests/eval_images/)
   build_plant_assets.py  app copies of the plant art (from assets/redesign/Stage-N-transparent.png)
+  build_icons.py     app icons + browser-tab icon (the logo's recycling arrows)
 supabase/migrations/ 001 to 005, run in order
 render.yaml          Render deploy
 tests/               pytest

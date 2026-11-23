@@ -1,7 +1,7 @@
 // The result screen with the API and navigation faked.
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { Alert, StyleSheet } from "react-native";
+import { Alert, Linking, StyleSheet } from "react-native";
 
 import Home from "@/app/(tabs)/index";
 import Result from "@/app/result";
@@ -25,6 +25,7 @@ jest.mock("@/lib/api", () => {
       health: jest.fn(),
       me: jest.fn(),
       discoverCurrent: jest.fn(async () => null),
+      nearestDropoff: jest.fn(),
     },
   };
 });
@@ -168,4 +169,79 @@ test("Skip goes back without confirming", async () => {
 
   expect(router.back).toHaveBeenCalled();
   expect(mockApi.confirmScan).not.toHaveBeenCalled();
+});
+
+// ---------- drop-off items: nearest site + Google Maps directions ----------
+
+const TRAIL_ROAD = {
+  id: "trail_road", name: "Trail Road Waste Facility", address: "4475 Trail Road, Nepean, ON",
+  lat: 45.2397, lon: -75.8031, accepts: ["electronics" as const, "batteries" as const], notes: "", verify: false,
+};
+
+function scanBattery() {
+  lastScan.set({
+    photoUri: "file:///photo.jpg",
+    result: fakeResult({ category_id: "battery", name: "Battery", material: "hazardous", recyclable: false, bin: "dropoff", dropoff_type: "batteries", tips: [] }),
+  });
+}
+
+function allowLocation() {
+  const Location = jest.requireMock("expo-location");
+  Location.requestForegroundPermissionsAsync.mockResolvedValueOnce({ status: "granted" });
+  Location.getCurrentPositionAsync.mockResolvedValueOnce({ coords: { latitude: 45.4215, longitude: -75.6972 } });
+}
+
+test("a drop-off item shows the nearest site for it, and Directions opens Google Maps from where you are", async () => {
+  scanBattery();
+  allowLocation();
+  mockApi.nearestDropoff.mockResolvedValue({ site: TRAIL_ROAD, distance_km: 18.4 });
+  const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+
+  await render(<Result />);
+
+  expect(await screen.findByText("Trail Road Waste Facility")).toBeTruthy();
+  expect(mockApi.nearestDropoff).toHaveBeenCalledWith(45.4215, -75.6972, "batteries");
+  expect(screen.getByText("4475 Trail Road, Nepean, ON · 18.4 km away")).toBeTruthy();
+  expect(screen.getByText("Trail Road Waste Facility · 18.4 km")).toBeTruthy(); // on the bin card too
+
+  await fireEvent.press(screen.getByRole("button", { name: "Directions to Trail Road Waste Facility in Google Maps" }));
+  const url = new URL(open.mock.calls[0][0]);
+  expect(url.origin + url.pathname).toBe("https://www.google.com/maps/dir/");
+  expect(url.searchParams.get("origin")).toBe("45.4215,-75.6972");
+  expect(url.searchParams.get("destination")).toBe("Trail Road Waste Facility, 4475 Trail Road, Nepean, ON");
+  open.mockRestore();
+});
+
+test("without location, a drop-off item offers a Google Maps search instead", async () => {
+  scanBattery(); // location is refused by default (jest.setup.tsx)
+  const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+
+  await render(<Result />);
+  await fireEvent.press(await screen.findByRole("button", { name: "Find drop-offs in Google Maps" }));
+
+  expect(mockApi.nearestDropoff).not.toHaveBeenCalled();
+  expect(screen.getByText(/Allow location/)).toBeTruthy();
+  const url = new URL(open.mock.calls[0][0]);
+  expect(url.pathname).toBe("/maps/search/");
+  expect(url.searchParams.get("query")).toBe("battery recycling drop-off Ottawa");
+  open.mockRestore();
+});
+
+test("if the backend can't find a site, the search is offered too", async () => {
+  scanBattery();
+  allowLocation();
+  mockApi.nearestDropoff.mockRejectedValue(new ApiError(404, "No drop-off site accepts that yet"));
+
+  await render(<Result />);
+
+  expect(await screen.findByText("Couldn't find the nearest site right now.")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Find drop-offs in Google Maps" })).toBeTruthy();
+});
+
+test("curbside items don't ask for your location", async () => {
+  await render(<Result />);
+  await screen.findByText("Next pickup Tue, Oct 27");
+
+  expect(jest.requireMock("expo-location").requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+  expect(screen.queryByTestId("dropoff-card")).toBeNull();
 });

@@ -45,3 +45,10 @@ jest.mock("expo-sqlite/kv-store", () => {
     },
   };
 });
+
+// The phone's location (lib/dropoff.ts): refused unless a test says otherwise
+jest.mock("expo-location", () => ({
+  Accuracy: { Balanced: 3 },
+  requestForegroundPermissionsAsync: jest.fn(async () => ({ status: "denied" })),
+  getCurrentPositionAsync: jest.fn(),
+}));

@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F3F6EF",
+        "backgroundColor": "#F0EFE7",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -46,6 +46,12 @@
       "expo-asset",
       "expo-image",
       "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Sortify uses your location to find the nearest drop-off site for things like batteries and electronics."
+        }
+      ],
       [
         "expo-splash-screen",
         {

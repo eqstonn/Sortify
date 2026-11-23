@@ -1,5 +1,6 @@
 // The scan result: what it is, which bin (BinCard in the bin's colour), prep
-// steps, then I recycled it / Skip / Not right?. When Gemini isn't sure, the
+// steps, then I recycled it / Skip / Not right?. Drop-off items also get the
+// nearest drop-off site with Google Maps directions (DropoffCard). When Gemini isn't sure, the
 // player picks the right category first (needs_review). Points come from the
 // backend on confirm; the app never works them out.
 
@@ -11,11 +12,13 @@ import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-n
 import ActionButton from "@/components/ActionButton";
 import BinCard from "@/components/BinCard";
 import CategoryPicker from "@/components/CategoryPicker";
+import DropoffCard from "@/components/DropoffCard";
 import GlassCard, { GlassLayers } from "@/components/GlassCard";
 import GlassIconButton from "@/components/GlassIconButton";
 import PressableScale from "@/components/PressableScale";
 import Screen from "@/components/Screen";
 import { api, ApiError, type Bin, type ClassifyResult, type NextPickup } from "@/lib/api";
+import { type DropoffState, useNearestDropoff } from "@/lib/dropoff";
 import { lastScan } from "@/lib/lastScan";
 import { showPointsToast } from "@/lib/pointsToast";
 import { makeStyles, useTheme } from "@/lib/theme";
@@ -32,10 +35,11 @@ function shortDate(iso: string): string {
 }
 
 /** The line under the bin name: when it goes out, or where to take it. */
-function binDetail(result: ClassifyResult, pickup: NextPickup | null): string | undefined {
+function binDetail(result: ClassifyResult, pickup: NextPickup | null, dropoff: DropoffState): string | undefined {
   if (result.bin === "dropoff") {
-    const nearest = result.nearest_dropoff;
-    return nearest ? `${nearest.site.name} · ${nearest.distance_km.toFixed(1)} km` : "Not curbside: see the city's drop-off sites";
+    return dropoff.state === "found"
+      ? `${dropoff.nearest.site.name} · ${dropoff.nearest.distance_km.toFixed(1)} km`
+      : "Not curbside: take it to a drop-off";
   }
   if (result.bin === "unsure") return 'Tap "Not right?" and pick what it is';
   const curbside: Bin[] = ["blue_bin", "black_bin", "green_bin"];
@@ -63,6 +67,8 @@ export default function Result() {
   const [pickup, setPickup] = useState<NextPickup | null>(null);
   const [busy, setBusy] = useState<"confirm" | "correct" | null>(null);
   const [picking, setPicking] = useState(false);
+  // Drop-off items: find the nearest site from the phone's location (asks permission the first time)
+  const dropoff = useNearestDropoff(result?.bin === "dropoff", result?.dropoff_type ?? null);
   const { colors, type } = useTheme();
   const s = useStyles();
 
@@ -143,7 +149,7 @@ export default function Result() {
             <ActivityIndicator color={colors.accent} />
           </GlassCard>
         ) : (
-          <BinCard bin={result.bin} detail={binDetail(result, pickup)} />
+          <BinCard bin={result.bin} detail={binDetail(result, pickup, dropoff)} />
         )}
 
         {result.needs_review && (
@@ -175,13 +181,7 @@ export default function Result() {
           </GlassCard>
         )}
 
-        {result.nearest_dropoff && (
-          <GlassCard>
-            <Text style={type.heading}>Nearest drop-off</Text>
-            <Text style={type.body}>{result.nearest_dropoff.site.name}</Text>
-            <Text style={type.caption}>{result.nearest_dropoff.site.address}</Text>
-          </GlassCard>
-        )}
+        {result.bin === "dropoff" && busy !== "correct" ? <DropoffCard type={result.dropoff_type} lookup={dropoff} /> : null}
 
         {result.tips.length > 0 && (
           <GlassCard>

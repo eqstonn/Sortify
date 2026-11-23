@@ -1,14 +1,118 @@
 {
-  "_note": "Add more sites (e.g. electronics retailers that take e-waste back, battery drop-off boxes). Check every address and coordinate against ottawa.ca or Google Maps before the demo.",
+  "_note": "Ottawa drop-off sites, researched Nov 2026. verify=true: found on a third-party list or an older page, so call before relying on it. Coordinates from OpenStreetMap. 'accepts' must only list what the site really takes: the app sends people to the nearest site for that type.",
   "sites": [
     {
       "id": "trail_road",
-      "name": "Trail Road Waste Facility",
+      "name": "Trail Waste Facility",
       "address": "4475 Trail Road, Nepean, ON",
-      "lat": 45.2397,
-      "lon": -75.8031,
-      "accepts": ["electronics", "batteries", "hazardous"],
-      "notes": "City of Ottawa facility. Check ottawa.ca for which items it accepts and on which days. Coordinates are approximate.",
+      "lat": 45.235,
+      "lon": -75.781,
+      "accepts": [
+        "electronics",
+        "batteries",
+        "hazardous"
+      ],
+      "notes": "City of Ottawa landfill. Electronics are free year-round (ottawa.ca). Batteries, paint, propane and other household hazardous waste only on the City's one-day drop-off event days.",
+      "verify": false
+    },
+    {
+      "id": "era_sheffield",
+      "name": "Electronic Recycling Association",
+      "address": "Unit 13, 2760 Sheffield Road, Ottawa, ON",
+      "lat": 45.3992,
+      "lon": -75.6046,
+      "accepts": [
+        "electronics"
+      ],
+      "notes": "Takes computers, monitors, TVs and other electronics in any condition (era.ca). Fees for some items (TVs, microwaves). Hours not posted: call 613-518-4467.",
+      "verify": false
+    },
+    {
+      "id": "quantum_ages",
+      "name": "Quantum Lifecycle Partners",
+      "address": "Unit 700, 900 Ages Drive, Ottawa, ON",
+      "lat": 45.3819,
+      "lon": -75.6135,
+      "accepts": [
+        "electronics"
+      ],
+      "notes": "Free residential electronics drop-off, Mon-Fri 7:00-15:30 (quantumlifecycle.com, page from 2025).",
+      "verify": true
+    },
+    {
+      "id": "bestbuy_coventry",
+      "name": "Best Buy Ottawa East",
+      "address": "380 Coventry Road, Ottawa, ON",
+      "lat": 45.4201,
+      "lon": -75.6492,
+      "accepts": [
+        "electronics",
+        "batteries"
+      ],
+      "notes": "Store page lists electronics and battery recycling, even for things not bought there (stores.bestbuy.ca).",
+      "verify": false
+    },
+    {
+      "id": "bestbuy_rideau",
+      "name": "Best Buy Express Rideau Centre",
+      "address": "Unit 137, 50 Rideau Street, Ottawa, ON",
+      "lat": 45.4254,
+      "lon": -75.6918,
+      "accepts": [
+        "electronics",
+        "batteries"
+      ],
+      "notes": "Store page lists battery and electronics recycling (stores.bestbuy.ca, page from 2024). Small store: best for phones, cables, small devices.",
+      "verify": true
+    },
+    {
+      "id": "bestbuy_merivale",
+      "name": "Best Buy Ottawa West",
+      "address": "1701 Merivale Road, Nepean, ON",
+      "lat": 45.3462,
+      "lon": -75.7288,
+      "accepts": [
+        "electronics",
+        "batteries"
+      ],
+      "notes": "Listed as a drop-off point by a recycling directory; Best Buy Canada stores generally take electronics and batteries.",
+      "verify": true
+    },
+    {
+      "id": "bestbuy_kanata",
+      "name": "Best Buy Kanata",
+      "address": "745 Kanata Avenue, Kanata, ON",
+      "lat": 45.311,
+      "lon": -75.9097,
+      "accepts": [
+        "electronics",
+        "batteries"
+      ],
+      "notes": "Listed as a drop-off point by a recycling directory; Best Buy Canada stores generally take electronics and batteries.",
+      "verify": true
+    },
+    {
+      "id": "homedepot_barrhaven",
+      "name": "The Home Depot Barrhaven",
+      "address": "3779 Strandherd Drive, Nepean, ON",
+      "lat": 45.267,
+      "lon": -75.751,
+      "accepts": [
+        "batteries"
+      ],
+      "notes": "Call2Recycle drop-off for rechargeable and single-use batteries (locations.call2recycle.ca).",
+      "verify": false
+    },
+    {
+      "id": "ikea_ottawa",
+      "name": "IKEA Ottawa",
+      "address": "2685 Iris Street, Ottawa, ON",
+      "lat": 45.3505,
+      "lon": -75.7839,
+      "accepts": [
+        "batteries"
+      ],
+      "notes": "IKEA Canada takes back batteries and light bulbs (not fluorescent tubes) at every store. Listed for batteries only, because 'hazardous' here also means paint and propane, which IKEA doesn't take.",
       "verify": true
     }
   ]
