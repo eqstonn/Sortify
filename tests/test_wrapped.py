@@ -194,12 +194,12 @@ def scan_row(user_id, category_id, points=10, when=None):
 
 
 def test_ranking_ties_share_a_rank():
-    scans = [scan_row("a", "paper", 50), scan_row("b", "paper", 50), scan_row("c", "paper", 20), scan_row("d", "chip_bag", 0)]
+    scans = [scan_row("a", "paper", 50), scan_row("b", "paper", 50), scan_row("c", "paper", 20), scan_row("d", "plastic_cutlery_straw", 0)]
     assert [(r["user_id"], r["rank"]) for r in wrapped.ranking(scans)] == [("a", 1), ("b", 1), ("c", 3)]
 
 
 def test_corrected_scans_count_as_the_corrected_category():
-    row = scan_row("a", "chip_bag") | {"final_category_id": "glass_bottle_jar"}
+    row = scan_row("a", "plastic_cutlery_straw") | {"final_category_id": "glass_bottle_jar"}
     assert [m.material for m in wrapped.top_materials([row])] == ["glass"]
 
 

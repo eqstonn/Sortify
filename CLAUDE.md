@@ -25,10 +25,12 @@ Login: Supabase Auth with email + password or Google, and an optional profile ph
 
 ## Ottawa disposal
 
-- **Blue bin:** glass bottles/jars, metal cans, foil, plastic bottles/tubs/jugs, cartons
-- **Black bin:** paper, flattened cardboard, boxboard
+Rules as of January 1, 2026, when Circular Materials took over the blue and black bins (still two bins: containers blue, fibre black).
+
+- **Blue bin:** glass bottles/jars, metal cans, foil, aerosol cans (no hazard symbols), plastic bottles/tubs/jugs, cartons; new in 2026: flexible plastic (chip bags, wrappers, plastic bags, bubble wrap, film), foam packaging (takeout containers, cups, meat trays), paper coffee cups, tubes
+- **Black bin:** paper, flattened cardboard, boxboard, paper bags
 - **Green bin:** food scraps, soiled paper, greasy pizza boxes
-- **Garbage:** chip bags, styrofoam, plastic film
+- **Garbage:** plastic cutlery and straws, drinking glasses and ceramics, toys, diapers, books
 - **Drop-off:** electronics, batteries, paint, propane, bulbs, chemicals
 
 Pickup alternates blue/black weekly; green is weekly. Holiday shifts move pickup a day (e.g. Thanksgiving).

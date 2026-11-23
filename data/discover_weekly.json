@@ -12,13 +12,13 @@
       "category_id": "coffee_cup",
       "item": "Takeout coffee cup",
       "bonus_points": 20,
-      "explainer": "It looks like paper, but the plastic lining inside means the cup goes in the garbage. The plastic lid can go in the blue bin."
+      "explainer": "New in 2026: takeout coffee cups go in the blue bin. Empty it and take the lid off; the lid goes in the blue bin too."
     },
     {
       "category_id": "plastic_bag_film",
       "item": "Plastic grocery bag",
       "bonus_points": 20,
-      "explainer": "Plastic bags go in the black bin, not the blue one. They must be clean and dry: stuff them all into one bag and tie it."
+      "explainer": "New in 2026: plastic bags go in the blue bin with the containers, not the black bin. They must be empty, clean and dry."
     },
     {
       "category_id": "aerosol_can",

@@ -111,7 +111,7 @@ def test_last_weeks_find_doesnt_use_up_this_week(client, db, auth, this_week_is_
 
 
 def test_no_bonus_for_a_corrected_scan(client, db, auth, this_week_is_pizza):
-    scan_id = pending_scan(db, "chip_bag")
+    scan_id = pending_scan(db, "plastic_cutlery_straw")
     client.post(f"/scans/{scan_id}/correct", json={"category_id": "greasy_pizza_box"}, headers=auth)
     body = client.post(f"/scans/{scan_id}/confirm", headers=auth).json()
     assert body["points_awarded"] == 10  # corrected scans are capped and get no bonus

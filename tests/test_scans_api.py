@@ -211,7 +211,7 @@ def test_bad_scan_id_is_422(client, auth):
 
 
 def test_correct_changes_bin_and_caps_points(client, db, auth, scan):
-    scan_id = scan("chip_bag", auth)
+    scan_id = scan("plastic_cutlery_straw", auth)
     res = client.post(f"/scans/{scan_id}/correct", json={"category_id": "battery"}, headers=auth)
     assert res.status_code == 200
     body = res.json()
@@ -232,7 +232,7 @@ def test_correct_unknown_scan_then_confirm(client, auth, scan):
 
 
 def test_correct_with_location_finds_dropoff(client, auth, scan):
-    scan_id = scan("chip_bag", auth)
+    scan_id = scan("plastic_cutlery_straw", auth)
     body = client.post(
         f"/scans/{scan_id}/correct",
         json={"category_id": "battery", "lat": 45.42, "lon": -75.69},
@@ -242,13 +242,13 @@ def test_correct_with_location_finds_dropoff(client, auth, scan):
 
 
 def test_correct_to_made_up_category_is_422(client, auth, scan):
-    scan_id = scan("chip_bag", auth)
+    scan_id = scan("plastic_cutlery_straw", auth)
     res = client.post(f"/scans/{scan_id}/correct", json={"category_id": "gold_bar"}, headers=auth)
     assert res.status_code == 422
 
 
 def test_cant_correct_after_confirm(client, auth, scan):
-    scan_id = scan("chip_bag", auth)
+    scan_id = scan("plastic_cutlery_straw", auth)
     confirm(client, scan_id, auth)
     res = client.post(f"/scans/{scan_id}/correct", json={"category_id": "battery"}, headers=auth)
     assert res.status_code == 409
@@ -256,7 +256,7 @@ def test_cant_correct_after_confirm(client, auth, scan):
 
 def test_cant_correct_someone_elses_scan(client, db, auth, scan):
     bob = db.add_user("bob", token="bob-token")
-    scan_id = scan("chip_bag", auth)
+    scan_id = scan("plastic_cutlery_straw", auth)
     res = client.post(f"/scans/{scan_id}/correct", json={"category_id": "paper"}, headers=bob)
     assert res.status_code == 404
 

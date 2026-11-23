@@ -63,8 +63,15 @@ def test_every_site_is_valid():
         ("paper", Bin.BLACK),
         ("greasy_pizza_box", Bin.GREEN),
         ("food_scraps", Bin.GREEN),
-        ("chip_bag", Bin.GARBAGE),
+        ("plastic_cutlery_straw", Bin.GARBAGE),
+        ("broken_glass_ceramic", Bin.GARBAGE),
         ("battery", Bin.DROPOFF),
+        # New on January 1, 2026 (Circular Materials): these moved to the blue bin
+        ("chip_bag", Bin.BLUE),
+        ("plastic_bag_film", Bin.BLUE),
+        ("polystyrene_foam", Bin.BLUE),
+        ("coffee_cup", Bin.BLUE),
+        ("tube", Bin.BLUE),
         ("electronics", Bin.DROPOFF),
     ],
 )
@@ -76,7 +83,8 @@ def test_recyclable_flag():
     assert rules.get_disposal("aluminum_can").recyclable is True
     assert rules.get_disposal("food_scraps").recyclable is True  # composting counts
     assert rules.get_disposal("battery").recyclable is True
-    assert rules.get_disposal("chip_bag").recyclable is False
+    assert rules.get_disposal("plastic_cutlery_straw").recyclable is False
+    assert rules.get_disposal("chip_bag").recyclable is True  # since January 2026
 
 
 def test_unknown_category_is_safe():

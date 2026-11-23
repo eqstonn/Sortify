@@ -80,7 +80,7 @@ def test_material_breakdown(client, db, auth):
 
 
 def test_corrected_scans_count_as_their_new_category(client, db, auth):
-    scan_id = db.add_confirmed_scan("alice", "chip_bag", 2, days_ago(0))
+    scan_id = db.add_confirmed_scan("alice", "plastic_cutlery_straw", 2, days_ago(0))
     db.scans[scan_id]["final_category_id"] = "battery"
     assert me(client, auth)["breakdown"] == [{"material": "hazardous", "count": 1, "percent": 100}]
 

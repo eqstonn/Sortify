@@ -1,5 +1,5 @@
 {
-  "_note": "Ottawa curbside rules. Entries with verify=true still need a teammate to check against ottawa.ca. The other_* categories at the end are never offered to Gemini's photo step: a scan is filed under one when the item isn't in the list and a Google Search lookup (services/gemini.py) found its bin. Their points are each bin's usual points.",
+  "_note": "Ottawa curbside rules as of January 1, 2026, when Circular Materials took over the blue and black bins (ottawa.ca news, Jan 2 2026; circularmaterials.ca/resident-communities/ottawa). Still two bins: blue = containers (now including flexible plastic like chip bags and plastic bags, foam packaging, paper coffee cups, tubes), black = paper and fibre. Not accepted: toys, books, diapers, pots and pans, batteries, hazardous items. Entries with verify=true still need a teammate to check. The other_* categories at the end are never offered to Gemini's photo step: a scan is filed under one when the item isn't in the list and a Google Search lookup (services/gemini.py) found its bin. Their points are each bin's usual points.",
   "categories": [
     {
       "id": "aluminum_can",
@@ -71,15 +71,15 @@
       "rarity": "uncommon",
       "kg_estimate": 0.08,
       "tips": [
-        "Only if completely empty",
-        "Remove the plastic cap and put it in the blue bin too"
+        "Only if completely empty; leave the cap on",
+        "Not if it has a toxic, corrosive or flammable symbol (food and hair or skin sprays are fine)"
       ],
       "examples": [
         "hairspray can",
         "whipped cream can",
         "air freshener"
       ],
-      "verify": true
+      "verify": false
     },
     {
       "id": "glass_bottle_jar",
@@ -283,21 +283,23 @@
       "id": "plastic_bag_film",
       "name": "Plastic bag or film",
       "material": "plastic",
-      "bin": "black_bin",
+      "bin": "blue_bin",
       "dropoff_type": null,
       "points": 12,
       "rarity": "uncommon",
       "kg_estimate": 0.01,
       "tips": [
-        "Must be clean and dry",
-        "Stuff all bags into one bag and tie it"
+        "Empty, clean and dry",
+        "New in 2026: plastic bags and film go in the blue bin, not the black bin"
       ],
       "examples": [
         "grocery bag",
         "bread bag",
-        "bubble wrap"
+        "bubble wrap",
+        "dry cleaning bag",
+        "paper towel overwrap"
       ],
-      "verify": true
+      "verify": false
     },
     {
       "id": "food_scraps",
@@ -380,57 +382,64 @@
       "id": "chip_bag",
       "name": "Chip or snack bag",
       "material": "plastic",
-      "bin": "garbage",
+      "bin": "blue_bin",
       "dropoff_type": null,
-      "points": 2,
+      "points": 10,
       "rarity": "common",
       "kg_estimate": 0.01,
       "tips": [
-        "Not recyclable; put it in the garbage"
+        "Empty it and shake out the crumbs",
+        "New in 2026: flexible plastic packaging goes in the blue bin"
       ],
       "examples": [
         "chip bag",
         "candy wrapper",
-        "granola bar wrapper"
+        "granola bar wrapper",
+        "snack wrapper"
       ],
       "verify": false
     },
     {
       "id": "polystyrene_foam",
-      "name": "Styrofoam",
+      "name": "Foam container (Styrofoam)",
       "material": "plastic",
-      "bin": "garbage",
+      "bin": "blue_bin",
       "dropoff_type": null,
-      "points": 2,
+      "points": 10,
       "rarity": "common",
       "kg_estimate": 0.02,
       "tips": [
-        "Not accepted at the curb; put it in the garbage"
+        "Empty and free of food",
+        "Take the plastic wrap and absorbent pad off meat trays",
+        "New in 2026: foam packaging goes in the blue bin"
       ],
       "examples": [
         "foam cup",
-        "foam takeout tray",
-        "packing foam"
+        "foam takeout container",
+        "foam meat tray",
+        "foam packaging"
       ],
-      "verify": true
+      "verify": false
     },
     {
       "id": "coffee_cup",
       "name": "Paper coffee cup",
       "material": "paper",
-      "bin": "garbage",
+      "bin": "blue_bin",
       "dropoff_type": null,
-      "points": 2,
+      "points": 10,
       "rarity": "common",
       "kg_estimate": 0.015,
       "tips": [
-        "Put the plastic lid in the blue bin"
+        "Empty it and take the lid off; the lid goes in the blue bin too",
+        "New in 2026: hot and cold drink cups go in the blue bin"
       ],
       "examples": [
         "takeout coffee cup",
-        "paper cup"
+        "paper cup",
+        "cold drink cup"
       ],
-      "verify": true
+      "verify": false
     },
     {
       "id": "plastic_cutlery_straw",
@@ -449,7 +458,7 @@
         "straw",
         "stir stick"
       ],
-      "verify": false
+      "verify": true
     },
     {
       "id": "broken_glass_ceramic",
@@ -567,6 +576,27 @@
       "examples": [
         "BBQ propane tank",
         "camping cylinder"
+      ],
+      "verify": false
+    },
+    {
+      "id": "tube",
+      "name": "Toothpaste or lotion tube",
+      "material": "plastic",
+      "bin": "blue_bin",
+      "dropoff_type": null,
+      "points": 10,
+      "rarity": "common",
+      "kg_estimate": 0.02,
+      "tips": [
+        "Squeeze it empty",
+        "Leave the cap on",
+        "New in 2026: tubes go in the blue bin"
+      ],
+      "examples": [
+        "toothpaste tube",
+        "hand cream tube",
+        "deodorant"
       ],
       "verify": false
     },

@@ -1,7 +1,8 @@
 {
   "hints": [
-    "Chip bags and candy wrappers belong in garbage, not blue-bin plastics.",
-    "Plastic film and plastic shopping bags belong in garbage, not blue-bin rigid plastics.",
+    "Foam cups, foam takeout containers and foam meat trays are polystyrene_foam, not plastic_container.",
+    "Plastic shopping bags, bread bags, bubble wrap and plastic film or overwrap are plastic_bag_film.",
+    "Chip bags, candy wrappers and snack wrappers are chip_bag, not plastic_bag_film or plastic_container.",
     "Trading cards, playing cards, photos, toys and clothing are not boxboard, paper or any other listed category: answer unknown and name the item, so Sortify can look it up."
   ]
 }

@@ -44,11 +44,11 @@ def test_corrected_scan_cant_earn_rare_points():
 
 
 def test_corrected_cheap_item_keeps_its_points():
-    assert points.points_for("chip_bag", corrected=True, first_time=False) == 2
+    assert points.points_for("plastic_cutlery_straw", corrected=True, first_time=False) == 2
 
 
 def test_garbage_keeps_nothing_out_of_landfill():
-    assert points.kg_for("chip_bag") == 0
+    assert points.kg_for("plastic_cutlery_straw") == 0
     assert points.kg_for("glass_bottle_jar") > 0
 
 

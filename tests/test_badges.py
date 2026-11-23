@@ -41,7 +41,7 @@ def test_glass_master_needs_ten_bottles_or_jars():
 
 
 def test_corrected_category_counts():
-    row = scans("chip_bag")[0] | {"final_category_id": "glass_bottle_jar"}
+    row = scans("plastic_cutlery_straw")[0] | {"final_category_id": "glass_bottle_jar"}
     assert "glass_master" in badges.earned_ids([row] * 10)
 
 

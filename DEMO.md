@@ -24,7 +24,7 @@ One person talks, one person holds the phone. The phone is mirrored to the scree
 | --- | --- | --- | --- |
 | 1 | Empty pop can | **Blue bin**, +points, "rinse it" tip, first-time bonus | The basic flow: scan, answer, "I recycled it", points toast |
 | 2 | This week's Discover item (greasy pizza box) | **Green bin**, Discover bonus | The tricky one most people get wrong; Home card flips to "Found ✓" |
-| 3 | Chip bag | **Garbage**, 2 points | Honesty: not everything is recyclable, and we say so |
+| 3 | Chip bag | **Blue bin** (new in 2026), 10 points | Up to date: most people still think chip bags are garbage |
 | 4 | AA battery | **Drop-off**, the most points (rare item) | Hazardous items never go in a bin; rarer finds earn more |
 | spare | Glass jar, cardboard box | Blue bin / Black bin | If one of the above misfires |
 
@@ -41,7 +41,7 @@ Take every photo live. A photo that already earned points (even from the camera 
 **0:40 to 1:50, four scans** (about 15 seconds each)
 1. Can: tap Scan, photo, "Blue bin. Rinse it first." Tap **I recycled it**, points pop up.
 2. Pizza box: "This week's Discover item. Green bin, because the grease ruins paper recycling." Confirm, bonus.
-3. Chip bag: "Garbage. We'd rather tell you the truth than let you wish-cycle."
+3. Chip bag: "Most people still put this in the garbage. Since January, Ottawa takes chip bags in the blue bin, and Sortify already knows."
 4. Battery: "Never in a bin. It goes to a drop-off, and because it's a rare find it's worth the most."
 
 **1:50 to 2:15, Board and Me**
