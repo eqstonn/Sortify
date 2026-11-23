@@ -109,13 +109,13 @@ test("tapping the left goes back, and stops at the first card", async () => {
   onCard("intro", 1);
 });
 
-test("each card moves on by itself after 3 seconds, but the last one stays", async () => {
+test("each card moves on by itself after 5 seconds, but the last one stays", async () => {
   jest.useFakeTimers();
   await openStory();
 
   await act(async () => jest.advanceTimersByTime(CARD_MS));
   onCard("total", 2);
-  // Each card starts its own timer once it's on screen, so step 3 s at a time
+  // Each card starts its own timer once it's on screen, so step one card at a time
   for (let i = 0; i < 8; i++) await act(async () => jest.advanceTimersByTime(CARD_MS));
   onCard("summary", 7);
 });

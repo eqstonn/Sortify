@@ -1,6 +1,6 @@
 // Sortify Wrapped as a story: full-screen poster cards (components/wrapped/cards.tsx)
 // with segmented progress bars at the top.
-//   - Each card moves on by itself after 3 seconds (except the last).
+//   - Each card moves on by itself after 5 seconds (except the last).
 //   - Tap the left third to go back, anywhere else to go forward.
 //   - Hold anywhere to pause; let go to carry on.
 // The last card is a summary poster with Share and Done.
@@ -25,7 +25,7 @@ import { useReduceMotion } from "@/lib/useReduceMotion";
 import { type CardId, shareMessage, storyCards } from "@/lib/wrapped";
 import { layout } from "@/theme";
 
-export const CARD_MS = 3000;
+export const CARD_MS = 5000;
 
 // light: a pale card, so the bars, the close button and the status bar are dark
 const CARDS: Record<CardId, { Card: ComponentType<CardProps>; light: boolean }> = {
@@ -57,7 +57,7 @@ export default function WrappedStory({ data, onClose }: { data: WrappedOut; onCl
 
   const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(to, ids.length - 1))), [ids.length]);
 
-  // The 3-second clock. Pausing keeps what's left, so letting go carries on from there.
+  // The 5-second clock. Pausing keeps what's left, so letting go carries on from there.
   const clock = useRef({ index: -1, left: CARD_MS, since: 0 });
   useEffect(() => {
     if (clock.current.index !== index) clock.current = { index, left: CARD_MS, since: 0 };
@@ -130,7 +130,7 @@ export default function WrappedStory({ data, onClose }: { data: WrappedOut; onCl
   );
 }
 
-/** One bar per card: done ones full, the current one filling over 3 s, the rest empty. */
+/** One bar per card: done ones full, the current one filling over 5 s, the rest empty. */
 function Progress({ count, index, running, light }: { count: number; index: number; running: boolean; light: boolean }) {
   const P = useTheme().colors.wrapped;
   const fill = useSharedValue(0);

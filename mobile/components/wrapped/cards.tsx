@@ -105,13 +105,12 @@ export function IntroCard({ data, size, inset }: CardProps) {
   );
 }
 
-// ---------- 2. total items: count up, arrows orbiting ----------
+// ---------- 2. total items: count up inside a big hovering recycling logo ----------
 
 export function TotalCard({ data, size, inset }: CardProps) {
   const P = useTheme().colors.wrapped;
   const s = useStyles();
   const orbit = Math.min(size.w - 16, 400);
-  const radius = orbit / 2 - 36;
 
   return (
     <Poster bg={P.marigold} label={`You sorted ${plural(data.items, "item")} this month and earned ${plural(data.points, "point")}.`}>
@@ -128,23 +127,14 @@ export function TotalCard({ data, size, inset }: CardProps) {
         </Rise>
         <View style={styles.grow} />
         <View style={{ width: orbit, height: orbit, alignSelf: "center" }}>
-          {/* Three recycling arrows ride a slowly spinning circle round the number */}
-          <Loop style={StyleSheet.absoluteFill} from={{ rotate: "0deg" }} to={{ rotate: "360deg" }} duration={7000} back={false}>
-            {[0, 1, 2].map((k) => {
-              const angle = (k * 2 * Math.PI) / 3 - Math.PI / 2;
-              return (
-                <Rise
-                  key={k}
-                  from="pop"
-                  delay={500 + k * 160}
-                  bouncy
-                  style={[styles.abs, { left: orbit / 2 + radius * Math.cos(angle) - 30, top: orbit / 2 + radius * Math.sin(angle) - 30 }]}
-                >
-                  <RecycleArrows size={60} top={P.terracotta} bottom={P.forest} />
-                </Rise>
-              );
-            })}
-          </Loop>
+          {/* One big recycling logo with the number in its middle: pops in, then hovers and slowly turns */}
+          <Rise from="pop" delay={200} bouncy style={StyleSheet.absoluteFill}>
+            <Loop from={{ translateY: -10 }} to={{ translateY: 10 }} duration={2400}>
+              <Loop from={{ rotate: "0deg" }} to={{ rotate: "360deg" }} duration={16000} back={false}>
+                <RecycleArrows size={orbit} top={P.terracotta} bottom={P.cream} />
+              </Loop>
+            </Loop>
+          </Rise>
           <View style={[StyleSheet.absoluteFill, styles.center]}>
             <CountUp
               target={data.items}
