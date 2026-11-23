@@ -1,40 +1,42 @@
-// The spinner and the "Couldn't load" card that every tab shows before its data arrives.
+// The spinner and the "Couldn't load" glass card every tab shows before its data arrives.
 
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Text, View } from "react-native";
 
-import { colors, fonts, radius, spacing, type } from "@/theme";
+import ActionButton from "@/components/ActionButton";
+import GlassCard from "@/components/GlassCard";
+import Screen from "@/components/Screen";
+import { makeStyles, useTheme } from "@/lib/theme";
+import { layout, spacing } from "@/theme";
 
 export function Loading() {
+  const { colors } = useTheme();
+  const s = useStyles();
   return (
-    <View style={styles.center} testID="loading">
-      <ActivityIndicator color={colors.primary} size="large" />
-    </View>
+    <Screen>
+      <View style={s.center} testID="loading">
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    </Screen>
   );
 }
 
 export function ErrorState({ title, message, onRetry }: { title: string; message: string; onRetry: () => void }) {
+  const { type } = useTheme();
+  const s = useStyles();
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <View style={styles.card}>
+    <Screen style={s.middle}>
+      <GlassCard style={s.card}>
         <Text style={type.heading}>{title}</Text>
         <Text style={type.body}>{message}</Text>
-        <Pressable
-          onPress={onRetry}
-          style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.buttonText}>Try again</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+        <ActionButton label="Try again" onPress={onRetry} style={s.button} />
+      </GlassCard>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  screen: { flex: 1, backgroundColor: colors.background, padding: spacing.xl, justifyContent: "center" },
-  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.md },
-  button: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: "center", marginTop: spacing.sm },
-  buttonText: { fontFamily: fonts.bold, fontSize: 16, color: colors.onPrimary },
-});
+const useStyles = makeStyles(() => ({
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  middle: { justifyContent: "center", padding: layout.gutter },
+  card: { padding: spacing.xl },
+  button: { marginTop: spacing.sm },
+}));

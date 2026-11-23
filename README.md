@@ -6,8 +6,8 @@ Demo day? See [DEMO.md](DEMO.md).
 
 ## 1. Set up Supabase (once)
 
-1. In the Supabase dashboard, open **SQL Editor**. Paste each file in `supabase/migrations/` and click **Run**, in order: `001_init.sql`, `002_schedule.sql`, `003_badges.sql`, `004_leaderboard_items.sql`. A missing migration shows up as a "Server error: Could not find the table…" message in the app.
-2. Turn on anonymous sign-ins: **Authentication → Sign In / Providers → Allow anonymous sign-ins**.
+1. In the Supabase dashboard, open **SQL Editor**. Paste each file in `supabase/migrations/` and click **Run**, in order: `001_init.sql`, `002_schedule.sql`, `003_badges.sql`, `004_leaderboard_items.sql`, `005_auth.sql`. A missing migration shows up as a "Server error: Could not find the table…" message in the app.
+2. Set up login (email + password and Google) and profile photos: follow [docs/AUTH_SETUP.md](docs/AUTH_SETUP.md). Keep **Allow anonymous sign-ins** on: `scripts/dev_token.py` and the smoke test use it.
 3. Note your keys (**Project Settings → API Keys**): the project URL, the **secret** (service_role) key for the backend, and the **publishable** key for the app.
 
 ## 2. Run the backend on your laptop
@@ -89,6 +89,14 @@ python -m scripts.smoke_test <url> --photo can.jpg
 
 Rerunning `seed` refreshes the fake players' month up to today, so "This week" always has data. It only touches its own `seed-NN@example.com` logins, never real players.
 
+### Plant art
+
+The plant art originals are `mobile/assets/redesign/Stage-N-transparent.png` (4 stages, one per level). After changing them, rebuild the smaller copies the app uses and commit those:
+
+```bash
+python -m scripts.build_plant_assets    # writes mobile/assets/plant/stage-1..4.png
+```
+
 ## Run the tests
 
 ```bash
@@ -116,7 +124,8 @@ scripts/
   dev_token.py       login token for /docs
   dev_seed_month.py  a month of scans for one account
   eval_classifier.py Gemini accuracy on real photos (tests/eval_images/)
-supabase/migrations/ 001 to 004, run in order
+  build_plant_assets.py  app copies of the plant art (from assets/redesign/Stage-N-transparent.png)
+supabase/migrations/ 001 to 005, run in order
 render.yaml          Render deploy
 tests/               pytest
 ```
@@ -142,7 +151,8 @@ tests/               pytest
 | `GET /scans/me` 🔒 | Your last 50 scans |
 | `GET /stats/accuracy` 🔒 | Aggregate corrections, common mix-ups, and confidence bands (not ground-truth accuracy) |
 | `GET /leaderboard?range=week\|all` 🔒 | Top 20 plus your own row |
-| `GET /me`, `PATCH /me` 🔒 | Profile, level, stats, breakdown, badges; change name and avatar |
+| `GET /me`, `PATCH /me` 🔒 | Profile, level, stats, breakdown, badges; change name |
+| `POST /me/avatar`, `DELETE /me/avatar` 🔒 | Set a profile photo (cropped, shrunk, location removed) or go back to the default |
 | `GET /schedule/next`, `PUT /me/schedule` 🔒 | "Up next" pickup; set your pickup day |
 | `GET /wrapped/{year}/{month}` 🔒 | The 5 Wrapped cards |
 | `GET /discover/current` 🔒 | This week's tricky item and bonus |

@@ -78,7 +78,7 @@ Manual: run the migration in the SQL Editor, sign in a test user, scan, confirm,
 | --- | --- |
 | `supabase/migrations/002_leaderboard.sql` | Weekly and all-time leaderboard views |
 | `app/routers/leaderboard.py` | `GET /leaderboard?range=week|all`: top 20 plus your rank |
-| `app/services/levels.py` | Points to plant level (Seed, Sprout, Sapling, Young Tree...) and progress to next |
+| `app/services/levels.py` | Points to plant level (Sprout, Seedling, Sapling, Young Tree) and progress to next |
 | `app/routers/profile.py` | `GET /me`, `PATCH /me`: name, avatar, level, stats, "What you sort" breakdown |
 | `app/services/schedule.py` | Next pickup from pickup day + blue/black week, then holiday shifts |
 | `data/holiday_shifts.json` | Pickup dates that move, from the city calendar |
@@ -98,10 +98,10 @@ Manual: two test users scan and confirm at `/docs`; watch the leaderboard and `/
 | `mobile/app/(tabs)/_layout.tsx` | Bottom tabs with the centre Scan button |
 | `mobile/app/scan.tsx` | Camera (expo-camera) with framing guide and gallery picker |
 | `mobile/app/result.tsx` | Result card in the bin's colour, prep steps, I recycled it / Skip / Not right? |
-| `mobile/app/sign-in.tsx` | Name and avatar (anonymous Supabase sign-in) |
+| `mobile/app/sign-in.tsx` | Email + password or Google sign-in (Supabase Auth; see docs/AUTH_SETUP.md) |
 | `mobile/lib/api.ts` | Typed API client matching `app/schemas.py` |
 | `mobile/lib/supabase.ts` | Supabase login with the publishable key, token storage |
-| `mobile/components/` | `PlantHero`, `BinCard`, `PointsToast`, `StatTile`, `LeaderRow` |
+| `mobile/components/` | `HeroSheet`, `BinCard`, `PointsToast`, `StatTile`, `LeaderRow` |
 | `mobile/theme.ts` | Colours, fonts, spacing from the mockups |
 
 Tests (Jest + jest-expo + React Native Testing Library, API mocked): `api.ts` sends photo and token and handles errors; `BinCard` colours per bin; "I recycled it" calls confirm and shows the toast; "Not right?" sends a correction; Home renders from a fake profile; camera shows the upload fallback when permission is denied.

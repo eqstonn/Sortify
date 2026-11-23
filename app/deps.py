@@ -6,7 +6,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.db import Database, get_db
 
 # Adds the "Authorize" button at /docs. The app sends
-# "Authorization: Bearer <access token from supabase.auth.signInAnonymously()>"
+# "Authorization: Bearer <access token>" from its Supabase login (email + password
+# or Google; all Supabase logins work the same here). Supabase checks the token
+# and gives back the user id, which is also the player's profiles.id (005_auth.sql).
 bearer = HTTPBearer(auto_error=False, description="Supabase access token")
 
 

@@ -21,7 +21,7 @@ The backend is a plain JSON API. All logic (points, levels, stats, Wrapped) live
 6. **Discover weekly:** one tricky item each week with bonus points.
 7. **Home:** a plant that grows with recycled items (levels like "Sapling" → "Young Tree"), points, items this week, streak, Ottawa rank, and an "Up next" pickup banner (e.g. "Black + green bin · Tue, Oct 27").
 
-Email/password login can come later; start with name + avatar.
+Login: Supabase Auth with email + password or Google, and an optional profile photo (setup: docs/AUTH_SETUP.md).
 
 ## Ottawa disposal
 
@@ -73,11 +73,19 @@ requirements: fastapi, uvicorn, pydantic-settings, python-multipart, google-gena
 - **Gemini must pick from the fixed category list.** The bin comes from `data/categories.json`, not from Gemini's free text.
 - **Secrets:** never commit `.env`. `.env.example` lists the names with no values.
 
-## UI style (from the mockups)
+## UI style ("cozy garden", light only)
 
-Mockups for every screen are in docs/mockups/ (01-home, 02-leaderboard, 03-profile, 04-camera, 05-scan-result, 06-10 wrapped cards). Look at the matching image before building a screen and match it closely.
+The mockups in `mobile/assets/redesign/` are the source of truth for the look (2x images: halve pixel sizes). The redesign is being rolled out screen by screen; Wrapped, scan and result still use the older glass pieces until their step.
 
-Soft mint/sage background, rounded white cards, deep green primary (#2E7D32-ish), bold rounded sans headings. Bottom tab bar: Home, Board, centre Scan button, Wrapped, Me. Result card uses the bin's colour (blue bin = blue). Scan camera has a framing guide and a Photo/Barcode toggle.
+- Beige page with soft corner blobs (`Backdrop`, SVG), cream "chunky" cards: `#FFFDF7` fill, 1.5 pt dark-green edge, 24 pt corners, a solid band straight below (`boxShadow` with no blur). Deep green `#1F3D2A` and terracotta `#A9573B` accents; green/terracotta surfaces are vertical gradients with a 1 pt lighter top line (`Card tone=...`).
+- Fonts: Outfit (headings, numbers, buttons) and DM Sans (body), loaded in `app/_layout.tsx`. Icons: `lucide-react-native` (on a gradient, wrap an icon in a `<View>` or the browser paints it under the gradient).
+- One theme, no dark mode: `mobile/theme.ts` holds the palette; components never use raw colours, they use `useTheme()` / `makeStyles()` from `mobile/lib/theme.tsx`.
+- Shared pieces: `Screen` (backdrop + safe area + 500 px column cap, wider than any phone so sheets reach the screen edges), `Card`, `SheetPanel`, `ActionButton`, `TextField`, `Pill`, `ProgressBar`, `Avatar` (photo or grey default person), `Logo` (renders the SVG file), `IconTile`, `HeroSheet` (art behind a sheet that scrolls over it; pulling down drags the art along so the cut-off pot never shows), `NavBar` (floating green pill: Home, Board, raised terracotta Scan, Wrapped, Me), `PressableScale`. In dev builds, Me has a "Design system (dev)" button (`app/design.tsx`).
+- The result's bin card stays a solid block in the bin's colour.
+
+## Plant art
+
+One static transparent PNG per plant stage, no animation (`mobile/lib/plant.ts`). Originals: `mobile/assets/redesign/Stage-N-transparent.png`; `python -m scripts.build_plant_assets` writes the 1200 px app copies to `mobile/assets/plant/stage-N.png`. 4 levels, one stage each (`app/services/levels.py`): 1 Sprout (0 pts), 2 Seedling (50), 3 Sapling (100), 4 Young Tree (200), low on purpose for the demo. At level 4 the app shows "Max level".
 
 ## How we build
 
@@ -93,7 +101,10 @@ Full plan with files and tests per phase: docs/BUILD_PLAN.md (read it before sta
 - [x] Phase 3: Supabase auth, scans, points with anti-cheat (`app/db.py`, `app/deps.py`, `app/services/points.py`, `app/routers/scans.py`, `supabase/migrations/001_init.sql`, `scripts/dev_token.py`). Tests use `tests/fakes.py:FakeDB`.
 - [x] Phase 4: leaderboard, profile, levels, pickup schedule (`app/routers/leaderboard.py`, `profile.py`, `schedule.py`, `app/services/levels.py`, `stats.py`, `schedule.py`, `clock.py`, `data/holiday_shifts.json`, `supabase/migrations/002_schedule.sql`). Leaderboard views live in `001_init.sql`. All days/weeks/streaks use Ottawa time via `clock.py` (needs `tzdata` on Windows); tests pin `clock.today`.
 - [x] Phase 5: Expo app in `mobile/` (sign-in, camera, result, Home, Board, Me). Screens load through `lib/useLoad.ts` (loading, error + Try again, pull-to-refresh, reload on focus). Board's "N items sorted" needs `supabase/migrations/004_leaderboard_items.sql`; without it the rows just leave it out. Jest tests mock `@/lib/api`; `fireEvent` must be awaited (Testing Library v14).
-- [x] Phase 6: Wrapped, Discover weekly, badges (`app/services/wrapped.py`, `discover.py`, `badges.py`, `app/routers/wrapped.py`, `discover.py`, `data/discover_weekly.json`, `supabase/migrations/003_badges.sql`, `scripts/dev_seed_month.py`; app: `mobile/app/(tabs)/wrapped.tsx` + `components/WrappedStory.tsx`, `components/DiscoverCard.tsx` on Home, badges on `me.tsx`). Months and weeks use Ottawa time; a streak that crosses a month counts in full in both months' Wrapped.
+- [x] Phase 6: Wrapped, Discover weekly, badges (`app/services/wrapped.py`, `discover.py`, `badges.py`, `app/routers/wrapped.py`, `discover.py`, `data/discover_weekly.json`, `supabase/migrations/003_badges.sql`, `scripts/dev_seed_month.py`; app: `mobile/app/(tabs)/wrapped.tsx` + `components/WrappedStory.tsx`, Discover on Home (now `components/DiscoverRows.tsx`), badges on `me.tsx`). Months and weeks use Ottawa time; a streak that crosses a month counts in full in both months' Wrapped.
 - [x] Phase 7: seed data, Render deploy, demo prep (`scripts/seed.py`, `scripts/smoke_test.py`, `render.yaml`, README, `DEMO.md`). Seed players are logins `seed-NN@example.com`; rerunning replaces their month, `--remove` deletes them. `requirements.txt` is pinned to the tested versions. The app doesn't send location yet, so the result screen never shows the nearest drop-off.
+
+- [ ] Phase 9: "cozy garden" redesign from `mobile/assets/redesign/` (done: theme + shared pieces, nav, Home, Board, Me, 4 levels, splash + sign-in/sign-up/reset, real Supabase auth, photo avatars; to do: scan/result). Auth: `mobile/lib/supabase.ts` (sign-in functions, PKCE links), `lib/session.tsx` (loading / signedOut / signedIn / recovering picks the screens in `app/_layout.tsx`), `lib/authStorage.ts` (Remember me off = login kept in memory only). `005_auth.sql`: new profiles take the sign-up/Google name; public `avatars` bucket. `POST /me/avatar` crops to 512 px and strips EXIF before upload. Me's "Recycling since" comes from the oldest scan in GET /scans/me (newest 50 only). Screens fall back to the mockup's numbers (`lib/demo.ts`) only when the backend can't be reached.
+- [x] Phase 8: glass UI revamp (since replaced by Phase 9: no dark mode, static plant art, 4 levels). Jest mocks `expo-blur`, `lucide-react-native` and `expo-sqlite/kv-store` in `jest.setup.tsx`; `lib/kv.web.ts` keeps expo-sqlite out of the web build.
 
 Code lives in `app/` (routers in `app/routers/`, services in `app/services/`), data in `data/`, tests in `tests/`. Every phase ships with pytest tests; Gemini and Supabase are faked in tests. Run `pytest` before committing.

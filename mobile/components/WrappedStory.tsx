@@ -1,48 +1,31 @@
-// The five Sortify Wrapped story cards from docs/mockups/06-10: intro, total,
-// top material, rarest find, rank. Back/Next buttons or a sideways swipe move
-// between them; the progress bars at the top show where you are.
+// The five Sortify Wrapped story cards: intro, total, top material, rarest
+// find, rank. Each is a big glass panel over the backdrop with its own tint.
+// Back/Next buttons or a sideways swipe move between them; the bars at the
+// top show where you are.
 
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { PanResponder, Pressable, Share, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ShareIcon } from "lucide-react-native";
+import { type ReactNode, useMemo, useState } from "react";
+import { Image, PanResponder, Share, StyleSheet, Text, View } from "react-native";
 
+import ActionButton from "@/components/ActionButton";
+import Avatar, { avatarUri } from "@/components/Avatar";
 import { binLabel } from "@/components/BinCard";
+import GlassCard from "@/components/GlassCard";
+import GlassIconButton from "@/components/GlassIconButton";
+import Screen, { useNavSpace } from "@/components/Screen";
 import type { RarestFind, WrappedOut } from "@/lib/api";
-import { avatarEmoji } from "@/lib/avatars";
 import { kgText, plural } from "@/lib/format";
 import { materialLabel } from "@/lib/materials";
+import { plantArt, STAGES } from "@/lib/plant";
+import { makeStyles, useTheme } from "@/lib/theme";
 import {
   busiestDayText, comparedToAverage, introLine, monthName, rarityLine, shareMessage, withArticle,
 } from "@/lib/wrapped";
-import { colors, fonts, radius, spacing } from "@/theme";
+import { fonts, layout, podiumColors, radius, spacing } from "@/theme";
 
 const CARDS = 5;
 const SWIPE_DISTANCE = 50;
-
-// Each card's colours, from the mockups
-type Theme = {
-  bg: string;
-  text: string;
-  track: string; // empty progress bar
-  fill: string; // filled progress bar
-  backBg: string;
-  backText: string;
-  nextBg: string;
-  nextText: string;
-};
-
-const white = colors.onPrimary;
-const ink = colors.text;
-const onColour = { text: white, track: "rgba(255,255,255,0.3)", fill: white, backBg: "rgba(255,255,255,0.2)", backText: white, nextBg: white, nextText: ink };
-
-const THEMES: Theme[] = [
-  { bg: "#1B3A26", ...onColour, nextBg: "#9FD3A8" }, // intro: dark green
-  { bg: colors.primary, ...onColour }, // total: green
-  { bg: "#2563A6", ...onColour }, // top material: blue
-  { bg: "#F2C4A8", text: ink, track: "rgba(23,48,31,0.2)", fill: ink, backBg: "rgba(23,48,31,0.08)", backText: ink, nextBg: ink, nextText: white }, // rarest: peach
-  { bg: colors.primarySoft, text: ink, track: "rgba(23,48,31,0.2)", fill: ink, backBg: "transparent", backText: ink, nextBg: colors.primary, nextText: white }, // rank: mint
-];
 
 // Icon in the circle on the rarest-find card
 const RARE_ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
@@ -56,8 +39,10 @@ const RARE_ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> =
 
 export default function WrappedStory({ data, onClose }: { data: WrappedOut; onClose: () => void }) {
   const [page, setPage] = useState(0);
-  const t = THEMES[page];
   const month = monthName(data.month);
+  const navSpace = useNavSpace();
+  const { colors } = useTheme();
+  const s = useStyles();
 
   // setPage with a function, so the swipe handler made once still sees the current page
   const next = () => setPage((p) => Math.min(p + 1, CARDS - 1));
@@ -77,237 +62,232 @@ export default function WrappedStory({ data, onClose }: { data: WrappedOut; onCl
   const share = () => Share.share({ message: shareMessage(data) }).catch(() => {});
 
   const cards = [
-    <Intro key="intro" data={data} month={month} t={t} />,
-    <Total key="total" data={data} t={t} />,
-    <TopMaterial key="material" data={data} t={t} />,
-    <Rarest key="rarest" find={data.rarest_find} t={t} />,
-    <Rank key="rank" data={data} t={t} />,
+    <Intro key="intro" data={data} month={month} />,
+    <Total key="total" data={data} />,
+    <TopMaterial key="material" data={data} />,
+    <Rarest key="rarest" find={data.rarest_find} />,
+    <Rank key="rank" data={data} />,
   ];
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: t.bg }]} edges={["top"]} {...swipe.panHandlers}>
-      <View style={styles.progress} accessibilityLabel={`Card ${page + 1} of ${CARDS}`}>
-        {cards.map((_, i) => (
-          <View key={i} style={[styles.segment, { backgroundColor: i <= page ? t.fill : t.track }]} />
-        ))}
-      </View>
-      <View style={styles.header}>
-        <Text style={[styles.eyebrow, { color: t.text }]}>SORTIFY WRAPPED · {month.toUpperCase()}</Text>
-        <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" hitSlop={12}>
-          <Feather name="x" size={22} color={t.text} />
-        </Pressable>
-      </View>
-
-      <View style={styles.body}>{cards[page]}</View>
-
-      {page === 0 && <Button label="Let's go" onPress={next} bg={t.nextBg} color={t.nextText} />}
-      {page > 0 && page < CARDS - 1 && (
-        <View style={styles.buttons}>
-          <Button label="Back" onPress={back} bg={t.backBg} color={t.backText} grow />
-          <Button label="Next" onPress={next} bg={t.nextBg} color={t.nextText} grow />
+    <Screen>
+      <View style={[s.screen, { paddingBottom: navSpace }]} {...swipe.panHandlers}>
+        <View style={s.progress} accessibilityLabel={`Card ${page + 1} of ${CARDS}`}>
+          {cards.map((_, i) => (
+            <View key={i} style={[s.segment, i <= page && s.segmentDone]} />
+          ))}
         </View>
-      )}
-      {page === CARDS - 1 && (
-        <View style={styles.lastButtons}>
-          <Button label="Share your Wrapped" icon="share" onPress={share} bg={t.nextBg} color={t.nextText} />
-          <Pressable onPress={onClose} accessibilityRole="button" style={styles.done}>
-            <Text style={[styles.doneText, { color: t.text }]}>Done</Text>
-          </Pressable>
+        <View style={s.header}>
+          <Text style={s.eyebrow}>SORTIFY WRAPPED · {month.toUpperCase()}</Text>
+          <GlassIconButton icon="x" label="Close" onPress={onClose} size={40} />
         </View>
-      )}
-    </SafeAreaView>
+
+        <GlassCard style={s.panel}>
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.wrapped[page] }]} />
+          <View style={s.body}>{cards[page]}</View>
+        </GlassCard>
+
+        {page === 0 && <ActionButton label="Let's go" onPress={next} />}
+        {page > 0 && page < CARDS - 1 && (
+          <View style={s.buttons}>
+            <ActionButton variant="glass" label="Back" onPress={back} style={s.grow} />
+            <ActionButton label="Next" onPress={next} style={s.grow} />
+          </View>
+        )}
+        {page === CARDS - 1 && (
+          <View style={s.buttons}>
+            <ActionButton variant="glass" label="Done" onPress={onClose} style={s.grow} />
+            <ActionButton label="Share your Wrapped" icon={ShareIcon} onPress={share} style={s.share} />
+          </View>
+        )}
+      </View>
+    </Screen>
   );
 }
 
 // ---------- the five cards ----------
 
-function Intro({ data, month, t }: { data: WrappedOut; month: string; t: Theme }) {
+function Intro({ data, month }: { data: WrappedOut; month: string }) {
+  const s = useStyles();
   return (
     <>
-      <Text style={[styles.hero, { color: t.text }]}>
+      <Text style={s.hero}>
         Your{"\n"}
         {month},{"\n"}
-        <Text style={{ color: "#9FD3A8" }}>sorted.</Text>
+        <Text style={s.heroAccent}>sorted.</Text>
       </Text>
-      <Text style={[styles.lead, { color: t.text }]}>{introLine(data)}</Text>
-      <View style={styles.plant}>
-        <MaterialCommunityIcons name="sprout" size={110} color="#5FAE74" />
-        <View style={styles.potRim} />
-        <View style={styles.pot} />
+      <Text style={s.lead}>{introLine(data)}</Text>
+      <View style={s.plant}>
+        <Image source={plantArt(STAGES).poster} style={s.plantImage} accessibilityIgnoresInvertColors />
       </View>
     </>
   );
 }
 
-function Total({ data, t }: { data: WrappedOut; t: Theme }) {
+function Total({ data }: { data: WrappedOut }) {
+  const s = useStyles();
   return (
     <>
-      <Text style={[styles.lead, { color: t.text }]}>This month you sorted</Text>
-      <Text style={[styles.giant, { color: t.text }]}>{data.items.toLocaleString()}</Text>
-      <Text style={[styles.lead, { color: t.text }]}>{data.items === 1 ? "item" : "items"}</Text>
-      <View style={[styles.panel, { backgroundColor: "rgba(0,0,0,0.12)" }]}>
-        <Text style={[styles.panelTitle, { color: t.text }]}>about {kgText(data.kg)}</Text>
-        <Text style={[styles.small, { color: t.text }]}>
-          kept out of landfill. {comparedToAverage(data)}
-        </Text>
-      </View>
+      <Text style={s.lead}>This month you sorted</Text>
+      <Text style={s.giant}>{data.items.toLocaleString()}</Text>
+      <Text style={s.lead}>{data.items === 1 ? "item" : "items"}</Text>
+      <Inner>
+        <Text style={s.panelTitle}>about {kgText(data.kg)}</Text>
+        <Text style={s.small}>kept out of landfill. {comparedToAverage(data)}</Text>
+      </Inner>
     </>
   );
 }
 
-function TopMaterial({ data, t }: { data: WrappedOut; t: Theme }) {
+function TopMaterial({ data }: { data: WrappedOut }) {
+  const s = useStyles();
   const [top] = data.top_materials;
-  if (!top) return <Text style={[styles.lead, { color: t.text }]}>No materials yet this month.</Text>;
+  if (!top) return <Text style={s.lead}>No materials yet this month.</Text>;
   return (
     <>
-      <Text style={[styles.lead, { color: t.text }]}>Your top material was</Text>
-      <Text style={[styles.big, { color: t.text }]}>{materialLabel(top.material)}</Text>
-      <Text style={[styles.small, { color: t.text }]}>
+      <Text style={s.lead}>Your top material was</Text>
+      <Text style={s.big}>{materialLabel(top.material)}</Text>
+      <Text style={s.small}>
         {plural(top.count, "item")}. Most sorted: {top.top_items.join(" and ")}
       </Text>
-      <View style={styles.list}>
+      <View style={s.list}>
         {data.top_materials.map((m, i) => (
-          <View key={m.material} style={styles.listRow}>
-            <Text style={[styles.listNumber, { color: t.text }]}>{i + 1}</Text>
-            <Text style={[styles.listLabel, { color: t.text }]}>{materialLabel(m.material)}</Text>
-            <Text style={[styles.listCount, { color: t.text }]}>{plural(m.count, "item")}</Text>
-          </View>
+          <Inner key={m.material} row>
+            <Text style={s.listNumber}>{i + 1}</Text>
+            <Text style={s.listLabel}>{materialLabel(m.material)}</Text>
+            <Text style={s.listCount}>{plural(m.count, "item")}</Text>
+          </Inner>
         ))}
       </View>
     </>
   );
 }
 
-function Rarest({ find, t }: { find: RarestFind | null; t: Theme }) {
-  if (!find) return <Text style={[styles.lead, { color: t.text }]}>No rare finds this month.</Text>;
+function Rarest({ find }: { find: RarestFind | null }) {
+  const { colors } = useTheme();
+  const s = useStyles();
+  if (!find) return <Text style={s.lead}>No rare finds this month.</Text>;
   const where =
     find.bin === "dropoff"
       ? "It never goes in a bin, and you took it to a drop-off. Nice."
       : `It goes in the ${binLabel(find.bin).toLowerCase()}. Nice sorting.`;
   return (
     <>
-      <Text style={[styles.lead, { color: t.text }]}>Your rarest find</Text>
-      <View style={styles.rareCircle}>
-        <MaterialCommunityIcons name={RARE_ICONS[find.category_id] ?? "star-four-points"} size={72} color={colors.primary} />
+      <Text style={s.lead}>Your rarest find</Text>
+      <View style={s.rareCircle}>
+        <MaterialCommunityIcons name={RARE_ICONS[find.category_id] ?? "star-four-points"} size={68} color={colors.accent} />
       </View>
-      <Text style={[styles.big, { color: t.text }]}>{withArticle(find.item)}</Text>
-      <Text style={[styles.small, { color: t.text }]}>
+      <Text style={s.big}>{withArticle(find.item)}</Text>
+      <Text style={s.small}>
         {rarityLine(find.percent_of_players)} {where}
       </Text>
     </>
   );
 }
 
-function Rank({ data, t }: { data: WrappedOut; t: Theme }) {
+function Rank({ data }: { data: WrappedOut }) {
+  const s = useStyles();
   const top = data.top_recycler;
   return (
     <>
-      <Text style={[styles.lead, { color: t.text }]}>You finished the month</Text>
+      <Text style={s.lead}>You finished the month</Text>
       {data.rank ? (
-        <Text style={[styles.rank, { color: t.text }]}>
-          #{data.rank} <Text style={styles.rankCity}>in Ottawa</Text>
+        <Text style={s.rank}>
+          #{data.rank} <Text style={s.rankCity}>in Ottawa</Text>
         </Text>
       ) : (
-        <Text style={[styles.big, { color: t.text }]}>Keep sorting to get ranked</Text>
+        <Text style={s.big}>Keep sorting to get ranked</Text>
       )}
       {top && (
-        <View style={styles.whiteCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarEmoji}>{avatarEmoji(top.avatar)}</Text>
-          </View>
+        <Inner row>
+          <Avatar uri={avatarUri(top.avatar)} size={44} ring ringWidth={2} ringColor={podiumColors[0]} />
           <View>
-            <Text style={styles.tileLabel}>TOP RECYCLER</Text>
-            <Text style={styles.tileValue}>
+            <Text style={s.tileLabel}>TOP RECYCLER</Text>
+            <Text style={s.tileValue}>
               {top.is_me ? "You!" : top.name} · {top.points.toLocaleString()} pts
             </Text>
           </View>
-        </View>
+        </Inner>
       )}
-      <View style={styles.tiles}>
-        <Tile label="Busiest day" value={busiestDayText(data.busiest_day)} />
-        <Tile label="Longest streak" value={plural(data.longest_streak, "day")} />
+      <View style={s.tiles}>
+        <Inner style={s.tile}>
+          <Text style={s.tileLabel}>BUSIEST DAY</Text>
+          <Text style={s.tileValue}>{busiestDayText(data.busiest_day)}</Text>
+        </Inner>
+        <Inner style={s.tile}>
+          <Text style={s.tileLabel}>LONGEST STREAK</Text>
+          <Text style={s.tileValue}>{plural(data.longest_streak, "day")}</Text>
+        </Inner>
       </View>
     </>
   );
 }
 
-// ---------- pieces ----------
-
-function Tile({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={[styles.whiteCard, styles.tile]}>
-      <Text style={styles.small}>{label}</Text>
-      <Text style={styles.tileValue}>{value}</Text>
-    </View>
-  );
+// A lighter box inside the card, for stats and list rows
+function Inner({ children, row, style }: { children: ReactNode; row?: boolean; style?: object }) {
+  const s = useStyles();
+  return <View style={[s.inner, row && s.innerRow, style]}>{children}</View>;
 }
 
-type ButtonProps = {
-  label: string;
-  onPress: () => void;
-  bg: string;
-  color: string;
-  icon?: keyof typeof Feather.glyphMap;
-  grow?: boolean; // share a row equally with the other button
-};
-
-function Button({ label, onPress, bg, color, icon, grow }: ButtonProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => [styles.button, grow && { flex: 1 }, { backgroundColor: bg }, pressed && { opacity: 0.85 }]}
-    >
-      {icon && <Feather name={icon} size={18} color={color} />}
-      <Text style={[styles.buttonText, { color }]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing.lg },
+const useStyles = makeStyles(({ colors }) => ({
+  screen: { flex: 1, paddingHorizontal: layout.gutter, gap: spacing.md },
   progress: { flexDirection: "row", gap: 4, marginTop: spacing.md },
-  segment: { flex: 1, height: 3, borderRadius: 2 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: spacing.xl },
-  eyebrow: { fontFamily: fonts.extrabold, fontSize: 11, letterSpacing: 0.5 },
+  segment: { flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.track },
+  segmentDone: { backgroundColor: colors.text },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  eyebrow: { fontFamily: fonts.extrabold, fontSize: 11, letterSpacing: 0.8, color: colors.text },
+
+  panel: { flex: 1, padding: spacing.xl },
   body: { flex: 1, justifyContent: "center", gap: spacing.md },
 
-  hero: { fontFamily: fonts.extrabold, fontSize: 46, lineHeight: 50 },
-  giant: { fontFamily: fonts.extrabold, fontSize: 110, lineHeight: 120 },
-  big: { fontFamily: fonts.extrabold, fontSize: 40, lineHeight: 46 },
-  lead: { fontFamily: fonts.semibold, fontSize: 18 },
+  hero: { fontFamily: fonts.extrabold, fontSize: 44, lineHeight: 48, color: colors.text },
+  heroAccent: { color: colors.accent },
+  giant: { fontFamily: fonts.light, fontSize: 110, lineHeight: 120, letterSpacing: -3, color: colors.text },
+  big: { fontFamily: fonts.extrabold, fontSize: 36, lineHeight: 42, color: colors.text },
+  lead: { fontFamily: fonts.semibold, fontSize: 18, color: colors.text },
   small: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 19, color: colors.textMuted },
 
-  panel: { borderRadius: radius.md, padding: spacing.lg, gap: spacing.xs, marginTop: spacing.lg },
-  panelTitle: { fontFamily: fonts.extrabold, fontSize: 26 },
+  // 12 px boxes inside the card's 24 px padding: separate surfaces, own radius
+  inner: {
+    backgroundColor: colors.glassInner,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    borderRadius: radius.inner,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  innerRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  panelTitle: { fontFamily: fonts.light, fontSize: 30, lineHeight: 36, color: colors.text },
 
-  list: { gap: spacing.sm, marginTop: spacing.md },
-  listRow: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.14)", borderRadius: radius.sm, paddingVertical: 10, paddingHorizontal: spacing.lg },
-  listNumber: { fontFamily: fonts.extrabold, fontSize: 15, width: 28 },
-  listLabel: { fontFamily: fonts.bold, fontSize: 15, flex: 1 },
-  listCount: { fontFamily: fonts.semibold, fontSize: 13 },
+  list: { gap: spacing.sm, marginTop: spacing.sm },
+  listNumber: { fontFamily: fonts.extrabold, fontSize: 15, width: 22, color: colors.accent },
+  listLabel: { fontFamily: fonts.bold, fontSize: 15, flex: 1, color: colors.text },
+  listCount: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
 
-  rareCircle: { width: 150, height: 150, borderRadius: 75, backgroundColor: "#FBE3D6", alignSelf: "center", alignItems: "center", justifyContent: "center", marginVertical: spacing.lg },
+  rareCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: colors.glassInner,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: spacing.md,
+  },
 
-  rank: { fontFamily: fonts.extrabold, fontSize: 72, lineHeight: 80 },
-  rankCity: { fontSize: 28 },
-  whiteCard: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg },
-  avatar: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.primarySoft, borderWidth: 2, borderColor: "#D8A93B", alignItems: "center", justifyContent: "center" },
-  avatarEmoji: { fontSize: 22 },
+  rank: { fontFamily: fonts.light, fontSize: 72, lineHeight: 80, color: colors.text },
+  rankCity: { fontFamily: fonts.bold, fontSize: 26 },
   tiles: { flexDirection: "row", gap: spacing.sm },
-  tile: { flex: 1, flexDirection: "column", alignItems: "flex-start", gap: 2 },
-  tileLabel: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.5, color: colors.textMuted },
+  tile: { flex: 1 },
+  tileLabel: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.8, color: colors.textMuted },
   tileValue: { fontFamily: fonts.extrabold, fontSize: 17, color: colors.text },
 
-  plant: { alignItems: "center", marginTop: spacing.xl },
-  potRim: { width: 84, height: 12, borderRadius: 4, backgroundColor: "#D9805A", marginTop: -8 },
-  pot: { width: 70, height: 42, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: colors.terracotta },
+  plant: { alignSelf: "center", marginTop: spacing.md, borderRadius: radius.card, overflow: "hidden", borderWidth: 1, borderColor: colors.glassBorder },
+  plantImage: { width: 170, height: 170 },
 
   buttons: { flexDirection: "row", gap: spacing.sm },
-  lastButtons: { gap: spacing.xs },
-  button: { flexDirection: "row", gap: spacing.sm, alignItems: "center", justifyContent: "center", borderRadius: radius.md, paddingVertical: 16 },
-  buttonText: { fontFamily: fonts.bold, fontSize: 15 },
-  done: { alignItems: "center", paddingVertical: spacing.md },
-  doneText: { fontFamily: fonts.bold, fontSize: 14 },
-});
+  grow: { flex: 1 },
+  share: { flex: 2 },
+}));

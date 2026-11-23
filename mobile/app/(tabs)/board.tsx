@@ -1,139 +1,151 @@
-// Board, from docs/mockups/02-leaderboard.png: This week / All time tabs, a
-// podium for the top 3, the rest of the top 20 below, and your own row pinned
-// at the bottom even when you're outside the top 20. From GET /leaderboard.
+// Board ("Top charts"): This week / All time / Friends, the top three as a
+// podium of pots, everyone else (to #20) as rows on a sheet that scrolls up
+// over the podium, and your own row pinned in deep green above the nav, even
+// when you're outside the top 20. From GET /leaderboard?range=week|all.
+// Layout: assets/redesign "Leaderboard".
 
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Users } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import Card from "@/components/Card";
 import Chips from "@/components/Chips";
-import LeaderRow from "@/components/LeaderRow";
+import HeroSheet from "@/components/HeroSheet";
+import IconTile from "@/components/IconTile";
+import LeaderRow, { YouRow } from "@/components/LeaderRow";
+import Podium, { PODIUM_HEIGHT } from "@/components/Podium";
+import Screen, { NAV_HEIGHT, navBottom, useNavSpace } from "@/components/Screen";
 import { ErrorState, Loading } from "@/components/ScreenState";
-import { api, type LeaderboardEntry, type LeaderboardRange } from "@/lib/api";
-import { avatarEmoji } from "@/lib/avatars";
+import { api, type LeaderboardOut, type LeaderboardRange } from "@/lib/api";
+import { demoLeaderboard, isOffline } from "@/lib/demo";
 import { boardSubtitle } from "@/lib/format";
+import { movementText, rankMovement } from "@/lib/rankMovement";
+import { makeStyles, useTheme } from "@/lib/theme";
 import { useLoad } from "@/lib/useLoad";
-import { colors, fonts, podiumColors, radius, spacing, type } from "@/theme";
+import { fonts, layout, spacing } from "@/theme";
 
-const RANGES: { value: LeaderboardRange; label: string }[] = [
+type Tab = LeaderboardRange | "friends";
+
+const TABS: { value: Tab; label: string }[] = [
   { value: "week", label: "This week" },
   { value: "all", label: "All time" },
+  { value: "friends", label: "Friends" },
 ];
 
+// demo: the backend couldn't be reached, so this is the mockup's board
+type BoardData = { board: LeaderboardOut; movement: number | null; demo: boolean };
+
+const YOU_ROW = 62; // the pinned row's height
+const YOU_GAP = 13; // between it and the nav
+
 export default function Board() {
-  const [range, setRange] = useState<LeaderboardRange>("week");
-  const load = useCallback(() => api.leaderboard(range), [range]);
+  const [tab, setTab] = useState<Tab>("week");
+  const [range, setRange] = useState<LeaderboardRange>("week"); // the last real board picked; Friends keeps it
+  const load = useCallback(async (): Promise<BoardData> => {
+    try {
+      const board = await api.leaderboard(range);
+      return { board, movement: board.me ? rankMovement(range, board.me.rank) : null, demo: false };
+    } catch (e) {
+      if (isOffline(e)) return { board: demoLeaderboard(range), movement: 3, demo: true };
+      throw e;
+    }
+  }, [range]);
   const { status, refreshing, refresh, retry } = useLoad(load);
+  const navSpace = useNavSpace();
+  const insets = useSafeAreaInsets();
+  const { colors, type } = useTheme();
+  const s = useStyles();
+
+  const pick = (t: Tab) => {
+    setTab(t);
+    if (t !== "friends") setRange(t);
+  };
 
   if (status.state === "loading") return <Loading />;
   if (status.state === "error") return <ErrorState title="Couldn't load the board" message={status.message} onRetry={retry} />;
 
-  const board = status.data;
-  const switching = board.range !== range; // the other tab's data is still on its way
-  const podium = board.entries.slice(0, 3);
+  const { board, movement, demo } = status.data;
+  const friends = tab === "friends";
+  const switching = !friends && board.range !== range; // the other range is still on its way
+  const showPodium = !friends && !switching && board.entries.length > 0;
   const rest = board.entries.slice(3);
+  const youBottom = navBottom(insets.bottom) + NAV_HEIGHT + YOU_GAP;
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView
-        testID="board-scroll"
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
-      >
-        <Text style={type.caption}>{boardSubtitle(range)}</Text>
+    <Screen>
+      <View style={s.top}>
+        <Text style={s.subtitle}>{friends ? "Ottawa · friends" : boardSubtitle(range)}</Text>
         <Text style={type.title}>Top charts</Text>
-        <Chips options={RANGES} value={range} onChange={setRange} label="Leaderboard range" />
+        <View style={s.tabs}>
+          <Chips options={TABS} value={tab} onChange={pick} label="Leaderboard" />
+        </View>
+      </View>
 
-        {switching ? (
-          <ActivityIndicator color={colors.primary} style={styles.switching} />
-        ) : board.entries.length === 0 ? (
-          <View style={styles.card}>
-            <Text style={type.heading}>No one’s on the board yet</Text>
-            <Text style={type.body}>
-              {range === "week" ? "Nobody has sorted anything this week." : "Nobody has sorted anything yet."} Scan an
-              item to take #1!
-            </Text>
+      <HeroSheet
+        testID="board-scroll"
+        heroHeight={showPodium ? PODIUM_HEIGHT : 8}
+        bottomSpace={friends ? navSpace : navSpace + YOU_ROW + YOU_GAP}
+        refreshing={refreshing}
+        onRefresh={friends ? undefined : refresh}
+        hero={showPodium ? <Podium top={board.entries.slice(0, 3)} /> : null}
+      >
+        {demo ? (
+          <View style={s.offline} testID="offline-note">
+            <Text style={type.caption}>Offline: showing demo data.</Text>
+            <Pressable onPress={retry} accessibilityRole="button" hitSlop={8}>
+              <Text style={s.retry}>Try again</Text>
+            </Pressable>
           </View>
-        ) : (
-          <>
-            <Podium top={podium} />
-            {rest.length ? (
-              <View style={styles.card}>
-                {rest.map((e) => (
-                  <LeaderRow key={e.user_id} entry={e} />
-                ))}
-              </View>
-            ) : null}
-          </>
-        )}
-      </ScrollView>
+        ) : null}
 
-      {!switching ? (
-        <View style={styles.pinned}>
-          {board.me ? (
-            <LeaderRow
-              entry={board.me}
-              subtitle={board.entries.some((e) => e.is_me) ? undefined : "Keep sorting to reach the top 20"}
-            />
-          ) : (
-            <View style={styles.notRanked} testID="not-ranked">
-              <Text style={type.body}>You’re not on the board yet. Sort an item to get ranked!</Text>
-            </View>
-          )}
+        {friends ? (
+          <Card style={s.empty} testID="friends-soon">
+            <IconTile icon={Users} size={48} />
+            <Text style={type.cardTitle}>Friends are coming soon</Text>
+            <Text style={type.caption}>
+              Soon you’ll be able to add friends and see how you stack up. For now, see where you rank in Ottawa.
+            </Text>
+          </Card>
+        ) : switching ? (
+          <ActivityIndicator color={colors.accent} style={s.switching} />
+        ) : board.entries.length === 0 ? (
+          <Card style={s.empty}>
+            <Text style={type.cardTitle}>No one’s on the board yet</Text>
+            <Text style={type.caption}>
+              {range === "week" ? "Nobody has sorted anything this week." : "Nobody has sorted anything yet."} Scan an item to take #1!
+            </Text>
+          </Card>
+        ) : (
+          <View style={s.rows}>
+            {rest.map((e) => (
+              <LeaderRow key={e.user_id} entry={e} />
+            ))}
+          </View>
+        )}
+      </HeroSheet>
+
+      {!friends && !switching ? (
+        <View style={[s.pinned, { bottom: youBottom }]}>
+          <YouRow
+            entry={board.me}
+            movement={board.me && !board.entries.some((e) => e.is_me) && movement === null ? "Keep sorting to reach the top 20" : movementText(range, movement)}
+          />
         </View>
       ) : null}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
-// #2, #1, #3 left to right, with #1 raised, crowned and green
-function Podium({ top }: { top: LeaderboardEntry[] }) {
-  const order = [1, 0, 2];
-  return (
-    <View style={styles.podium} testID="podium">
-      {order.map((i) => {
-        const e = top[i];
-        if (!e) return <View key={i} style={styles.place} />;
-        const first = i === 0;
-        return (
-          <View key={e.user_id} style={styles.place} accessible accessibilityLabel={`Place ${i + 1}: ${e.is_me ? "You" : e.name}, ${e.points} points`}>
-            {first ? <MaterialCommunityIcons name="crown" size={26} color={podiumColors[0]} /> : null}
-            <View style={[styles.podiumAvatar, first && styles.podiumAvatarFirst, { borderColor: podiumColors[i] }]}>
-              <Text style={{ fontSize: first ? 30 : 24 }}>{avatarEmoji(e.avatar)}</Text>
-            </View>
-            <Text style={styles.podiumName} numberOfLines={1}>
-              {e.is_me ? "You" : e.name}
-            </Text>
-            <View style={[styles.block, first ? styles.blockFirst : styles.blockOther, e.is_me && !first && styles.blockMe]}>
-              <Text style={[styles.blockRank, first && styles.onPrimary]}>{e.rank}</Text>
-              <Text style={[type.caption, first && styles.onPrimary]}>{e.points.toLocaleString()} pts</Text>
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.xl, gap: spacing.md },
+const useStyles = makeStyles(({ colors }) => ({
+  top: { paddingHorizontal: layout.gutter, paddingTop: 4, paddingBottom: 6 },
+  subtitle: { fontFamily: fonts.medium, fontSize: 16, lineHeight: 21, color: colors.text },
+  tabs: { marginTop: 16 },
+  offline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
+  retry: { fontFamily: fonts.semibold, fontSize: 14, color: colors.terracotta, textDecorationLine: "underline" },
+  rows: { gap: 10, marginHorizontal: -4 },
+  empty: { gap: spacing.sm, alignItems: "flex-start" },
   switching: { marginTop: spacing.xxl },
-  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.sm },
-
-  podium: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, marginTop: spacing.md },
-  place: { flex: 1, alignItems: "center", gap: spacing.xs },
-  podiumAvatar: { width: 52, height: 52, borderRadius: 26, borderWidth: 3, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" },
-  podiumAvatarFirst: { width: 64, height: 64, borderRadius: 32 },
-  podiumName: { fontFamily: fonts.bold, fontSize: 13, color: colors.text, marginBottom: spacing.xs },
-  block: { alignSelf: "stretch", borderRadius: radius.md, alignItems: "center", justifyContent: "center", gap: 2 },
-  blockFirst: { height: 110, backgroundColor: colors.primary },
-  blockOther: { height: 80, backgroundColor: colors.card },
-  blockMe: { borderWidth: 1.5, borderColor: colors.primary },
-  blockRank: { fontFamily: fonts.extrabold, fontSize: 24, color: colors.text },
-  onPrimary: { color: colors.onPrimary },
-
-  pinned: { paddingHorizontal: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.md },
-  notRanked: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg },
-});
+  // Rows run 16 pt from the screen edges, a little wider than the 20 pt gutter
+  pinned: { position: "absolute", left: 16, right: 16 },
+}));

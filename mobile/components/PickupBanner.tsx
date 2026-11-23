@@ -1,15 +1,20 @@
-// Home's "Up next" banner, and the sheet where the player sets their pickup day.
-// No pickup day yet → the banner asks for one.
+// Home's "Up next" card: the terracotta bin tile, the next pickup, and a chevron.
+// Tapping it opens the sheet where the player sets their pickup day.
+// No pickup day yet → the card asks for one.
 
-import { Feather } from "@expo/vector-icons";
+import { Calendar, ChevronRight, Trash2 } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
+import ActionButton from "@/components/ActionButton";
+import Card from "@/components/Card";
 import Chips from "@/components/Chips";
+import IconTile from "@/components/IconTile";
 import Sheet from "@/components/Sheet";
 import { api, type NextPickup, type RecyclingWeek, type Weekday } from "@/lib/api";
+import { makeStyles, useTheme } from "@/lib/theme";
 import { errorText } from "@/lib/useLoad";
-import { colors, fonts, radius, spacing, type } from "@/theme";
+import { spacing } from "@/theme";
 
 const DAYS: { value: Weekday; label: string }[] = [
   { value: "monday", label: "Mon" },
@@ -28,28 +33,30 @@ type Props = { pickup: NextPickup | null; pickupDay?: Weekday; onSaved: (pickup:
 
 export default function PickupBanner({ pickup, pickupDay, onSaved }: Props) {
   const [open, setOpen] = useState(false);
+  const { colors, type } = useTheme();
+  const s = useStyles();
 
   return (
     <>
-      <Pressable
+      <Card
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.banner, pressed && { opacity: 0.85 }]}
-        accessibilityRole="button"
+        padding={12}
+        style={s.card}
+        accessibilityLabel={pickup ? `Up next: ${pickup.label}` : "Set your pickup day"}
         accessibilityHint={pickup ? "Change your pickup day" : undefined}
+        testID="up-next"
       >
-        <View style={styles.icon}>
-          <Feather name={pickup ? "trash-2" : "calendar"} size={20} color={colors.onPrimary} />
-        </View>
-        <View style={styles.text}>
-          <Text style={type.label}>UP NEXT</Text>
-          <Text style={styles.title} numberOfLines={1}>
+        <IconTile icon={pickup ? Trash2 : Calendar} tone="terracotta" size={42} />
+        <View style={s.text}>
+          <Text style={[type.label, s.overline]}>UP NEXT</Text>
+          <Text style={type.cardTitle} numberOfLines={1}>
             {pickup ? pickup.label : "Set your pickup day"}
           </Text>
           {pickup?.holiday ? <Text style={type.caption}>Moved a day for {pickup.holiday}</Text> : null}
           {!pickup ? <Text style={type.caption}>See which bins go out next</Text> : null}
         </View>
-        <Feather name="chevron-right" size={20} color={colors.textMuted} />
-      </Pressable>
+        <ChevronRight size={22} color={colors.text} strokeWidth={2} />
+      </Card>
 
       <ScheduleSheet
         visible={open}
@@ -71,6 +78,8 @@ function ScheduleSheet({ visible, initialDay, onClose, onSaved }: SheetProps) {
   const [week, setWeek] = useState<RecyclingWeek>("blue_bin");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { type } = useTheme();
+  const s = useStyles();
 
   const save = async () => {
     setBusy(true);
@@ -88,29 +97,19 @@ function ScheduleSheet({ visible, initialDay, onClose, onSaved }: SheetProps) {
     <Sheet visible={visible} title="Your pickup day" onClose={onClose}>
       <Text style={type.caption}>Which day does the city collect on your street?</Text>
       <Chips options={DAYS} value={day} onChange={setDay} label="Pickup day" />
-      <Text style={[type.caption, styles.gap]}>Which recycling bin goes out this week?</Text>
+      <Text style={[type.caption, s.gap]}>Which recycling bin goes out this week?</Text>
       <Chips options={WEEKS} value={week} onChange={setWeek} label="This week's bin" />
       <Text style={type.caption}>Blue and black swap every week. The green bin goes out every week.</Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable
-        onPress={save}
-        disabled={busy}
-        style={({ pressed }) => [styles.save, pressed && { opacity: 0.85 }]}
-        accessibilityRole="button"
-      >
-        {busy ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.saveText}>Save</Text>}
-      </Pressable>
+      {error ? <Text style={s.error}>{error}</Text> : null}
+      <ActionButton label="Save" onPress={save} busy={busy} style={s.gap} />
     </Sheet>
   );
 }
 
-const styles = StyleSheet.create({
-  banner: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md },
-  icon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.dark, alignItems: "center", justifyContent: "center" },
-  text: { flex: 1 },
-  title: { fontFamily: fonts.bold, fontSize: 16, color: colors.text },
+const useStyles = makeStyles(({ colors, type }) => ({
+  card: { flexDirection: "row", alignItems: "center", gap: 14, paddingRight: 16 },
+  text: { flex: 1, gap: 2 },
+  overline: { color: colors.text },
   gap: { marginTop: spacing.sm },
   error: { ...type.body, color: colors.danger },
-  save: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center", marginTop: spacing.sm },
-  saveText: { fontFamily: fonts.bold, fontSize: 16, color: colors.onPrimary },
-});
+}));

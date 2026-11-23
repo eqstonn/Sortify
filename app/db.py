@@ -4,6 +4,7 @@ Routers get a Database through the get_db dependency. Tests swap in
 tests/fakes.py:FakeDB, which has the same methods, so pytest runs offline.
 """
 
+import time
 from datetime import date, datetime
 from functools import lru_cache
 
@@ -19,6 +20,9 @@ RECENT_HASHES = 1000
 
 # GET /leaderboard?range=... -> the view in 001_init.sql
 LEADERBOARD_VIEWS = {"week": "leaderboard_week", "all": "leaderboard_all_time"}
+
+# Profile photos (public Storage bucket made in 005_auth.sql), one file per player
+AVATAR_BUCKET = "avatars"
 
 
 class ScanNotPending(Exception):
@@ -182,6 +186,17 @@ class Database:
         changes = {k: v.isoformat() if isinstance(v, date) else v for k, v in changes.items()}
         self.client.table("profiles").update(changes).eq("id", user_id).execute()
         return self.get_profile(user_id)
+
+    def upload_avatar(self, user_id: str, photo: bytes) -> str:
+        """Saves a prepared profile photo as avatars/<user id>.jpg. Returns its public URL."""
+        bucket = self.client.storage.from_(AVATAR_BUCKET)
+        path = f"{user_id}.jpg"
+        bucket.upload(path, photo, {"content-type": "image/jpeg", "upsert": "true", "cache-control": "3600"})
+        # Same file name every time, so add the time: a new URL makes phones load the new photo
+        return f"{bucket.get_public_url(path)}?v={int(time.time())}"
+
+    def delete_avatar(self, user_id: str) -> None:
+        self.client.storage.from_(AVATAR_BUCKET).remove([f"{user_id}.jpg"])
 
     # ---------- leaderboard ----------
 

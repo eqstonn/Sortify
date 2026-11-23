@@ -1,6 +1,6 @@
 // Small text helpers shared by screens.
 
-import type { LeaderboardRange, Level } from "@/lib/api";
+import type { LeaderboardRange, Level, ScanOut } from "@/lib/api";
 
 /** plural(1, "item") -> "1 item", plural(3, "day") -> "3 days" */
 export function plural(n: number, word: string): string {
@@ -23,7 +23,7 @@ export function greeting(hour: number): string {
 
 /** The line under Home's level bar */
 export function levelHint(level: Level): string {
-  if (!level.next_name) return "Your plant is fully grown. Keep sorting!";
+  if (!level.next_name) return "Max level: your plant is fully grown. Keep sorting!";
   return `${plural(level.points_to_next, "point")} until your plant becomes a ${level.next_name}`;
 }
 
@@ -33,4 +33,16 @@ export function boardSubtitle(range: LeaderboardRange, today = new Date()): stri
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
   return `Ottawa · week of ${monday.toLocaleDateString("en-CA", { month: "short", day: "numeric" })}`;
+}
+
+/**
+ * Me's "Recycling since Oct 2026": the month of your first confirmed sort, or
+ * null before you've sorted anything. GET /scans/me only returns your newest 50
+ * scans, so for players with more than that it's the oldest of those 50.
+ */
+export function recyclingSince(scans: ScanOut[]): string | null {
+  const times = scans.filter((s) => s.status === "confirmed").map((s) => Date.parse(s.confirmed_at ?? s.created_at));
+  if (!times.length) return null;
+  const first = new Date(Math.min(...times));
+  return first.toLocaleDateString("en-CA", { month: "short", year: "numeric" });
 }

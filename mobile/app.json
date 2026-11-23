@@ -38,12 +38,22 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Sortify lets you pick a photo of an item to sort.",
+          "photosPermission": "Sortify lets you pick a photo of an item to sort, or a profile picture.",
           "cameraPermission": false,
           "microphonePermission": false
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-image",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F0EFE7",
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 196
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

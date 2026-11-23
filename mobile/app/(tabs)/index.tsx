@@ -1,39 +1,65 @@
-// Home, from docs/mockups/01-home.png: greeting, "Up next" pickup banner, the
-// plant that grows with your level, points and level bar, three stat tiles,
-// and this week's Discover item. All from GET /me and GET /schedule/next.
+// Home: greeting and avatar, the "Up next" pickup card, the big plant for your
+// level, and a sheet that scrolls up over the plant with your points, level,
+// three stat tiles and Discover weekly. From GET /me, GET /schedule/next and
+// GET /discover/current. Layout: assets/redesign "Home" and "Sheet pulled up".
 
-import { useFocusEffect } from "expo-router";
+import { Image } from "expo-image";
+import { router, useFocusEffect } from "expo-router";
+import { Flame, Leaf, Trophy } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 
-import DiscoverCard from "@/components/DiscoverCard";
+import Avatar, { avatarUri } from "@/components/Avatar";
+import DiscoverRows from "@/components/DiscoverRows";
+import HeroSheet from "@/components/HeroSheet";
 import PickupBanner from "@/components/PickupBanner";
-import PlantHero from "@/components/PlantHero";
+import Pill from "@/components/Pill";
 import PointsToast from "@/components/PointsToast";
+import ProgressBar from "@/components/ProgressBar";
+import Screen, { useNavSpace } from "@/components/Screen";
 import { ErrorState, Loading } from "@/components/ScreenState";
 import StatTile from "@/components/StatTile";
 import { api, type DiscoverOut, type NextPickup, type ProfileOut } from "@/lib/api";
-import { avatarEmoji } from "@/lib/avatars";
+import { demoDiscover, demoPickup, demoProfile, isOffline } from "@/lib/demo";
 import { greeting, levelHint, plural } from "@/lib/format";
+import { plantArt, stageFor } from "@/lib/plant";
 import { clearPointsToast, usePointsToast } from "@/lib/pointsToast";
+import { makeStyles, useTheme } from "@/lib/theme";
 import { useLoad } from "@/lib/useLoad";
-import { colors, fonts, radius, spacing, type } from "@/theme";
+import { chunky, fonts, layout, spacing } from "@/theme";
 
-type HomeData = { profile: ProfileOut; pickup: NextPickup | null };
+// demo: the backend couldn't be reached, so these are the mockup's numbers
+type HomeData = { profile: ProfileOut; pickup: NextPickup | null; demo: boolean };
 
 const loadHome = async (): Promise<HomeData> => {
-  const [profile, pickup] = await Promise.all([api.me(), api.nextPickup()]);
-  return { profile, pickup };
+  try {
+    const [profile, pickup] = await Promise.all([api.me(), api.nextPickup()]);
+    return { profile, pickup, demo: false };
+  } catch (e) {
+    if (isOffline(e)) return { profile: demoProfile, pickup: demoPickup, demo: true };
+    throw e;
+  }
 };
+
+// The plant art is square with empty space above the leaves; this much of it shows above the sheet
+const PLANT_SHOWN = 0.86;
+const PLANT_MAX = 370;
 
 export default function Home() {
   const { status, refreshing, refresh, retry, update } = useLoad(loadHome);
   const [discover, setDiscover] = useState<DiscoverOut | null>(null);
+  const [areaHeight, setAreaHeight] = useState(0);
+  const { width } = useWindowDimensions();
   const toast = usePointsToast();
+  const navSpace = useNavSpace();
+  const { type } = useTheme();
+  const s = useStyles();
 
-  // Discover is extra: if it fails, Home still works without the card
-  const loadDiscover = useCallback(() => api.discoverCurrent().then(setDiscover, () => setDiscover(null)), []);
+  // Discover is extra: if it fails, Home still works without its first row
+  const loadDiscover = useCallback(
+    () => api.discoverCurrent().then(setDiscover, (e) => setDiscover(isOffline(e) ? demoDiscover : null)),
+    [],
+  );
   useFocusEffect(
     useCallback(() => {
       loadDiscover();
@@ -48,78 +74,112 @@ export default function Home() {
   if (status.state === "loading") return <Loading />;
   if (status.state === "error") return <ErrorState title="Couldn't load your garden" message={status.message} onRetry={retry} />;
 
-  const { profile: p, pickup } = status.data;
-  return (
-    <View style={styles.fill}>
-      <SafeAreaView style={styles.screen} edges={["top"]}>
-        <ScrollView
-          testID="home-scroll"
-          contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-          <View style={styles.header}>
-            <View style={styles.headerText}>
-              <Text style={type.caption}>
-                {greeting(new Date().getHours())}, {p.name}
-              </Text>
-              <Text style={type.title}>Your garden is growing</Text>
-            </View>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarEmoji}>{avatarEmoji(p.avatar)}</Text>
-            </View>
-          </View>
+  const { profile: p, pickup, demo } = status.data;
 
+  // As big as the mockup on a normal phone; smaller on a short one so the sheet still shows
+  const column = Math.min(width, layout.maxContent);
+  const fit = areaHeight > 0 ? (areaHeight - 190) / PLANT_SHOWN : PLANT_MAX;
+  const plant = Math.round(Math.max(200, Math.min(column * 0.92, PLANT_MAX, fit)));
+  const heroHeight = Math.round(plant * PLANT_SHOWN);
+
+  return (
+    <Screen>
+      <View style={s.top}>
+        <View style={s.header}>
+          <View style={s.headerText}>
+            <Text style={s.greeting} numberOfLines={1}>
+              {greeting(new Date().getHours())}, {p.name}
+            </Text>
+            <Text style={type.title}>Your garden is growing</Text>
+          </View>
+          <Pressable onPress={() => router.navigate("/me")} accessibilityRole="button" accessibilityLabel="Your profile" hitSlop={6}>
+            <Avatar uri={avatarUri(p.avatar)} size={46} ring ringWidth={2} depth={chunky.band} />
+          </Pressable>
+        </View>
+        <View style={s.upNext}>
           <PickupBanner
             pickup={pickup}
             pickupDay={p.schedule?.pickup_day}
             onSaved={(next) => update((d) => ({ ...d, pickup: next }))}
           />
+        </View>
+      </View>
 
-          <View style={styles.card}>
-            <PlantHero level={p.level.number} name={p.level.name} />
-            <Text style={styles.points}>{p.total_points.toLocaleString()}</Text>
-            <Text style={[type.caption, styles.center]}>
-              points · Level {p.level.number} {p.level.name}
+      <HeroSheet
+        testID="home-scroll"
+        heroHeight={heroHeight}
+        bottomSpace={navSpace}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        onAreaHeight={setAreaHeight}
+        hero={
+          // The pot's bottom tucks 12 pt under the sheet
+          <View style={[s.plantWrap, { top: heroHeight + 12 - plant }]}>
+            <Image
+              source={plantArt(stageFor(p.level.number)).poster}
+              style={{ width: plant, height: plant }}
+              contentFit="contain"
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={`Your plant: level ${p.level.number}, ${p.level.name}`}
+              testID="plant"
+            />
+          </View>
+        }
+      >
+        {demo ? (
+          <View style={s.offline} testID="offline-note">
+            <Text style={type.caption}>Offline: showing demo data.</Text>
+            <Pressable onPress={retry} accessibilityRole="button" hitSlop={8}>
+              <Text style={s.retry}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <View style={s.pointsRow}>
+          <View style={s.points}>
+            <Text style={type.display} testID="points">
+              {p.total_points.toLocaleString()}
             </Text>
-            <View
-              style={styles.track}
-              accessibilityRole="progressbar"
-              accessibilityValue={{ min: 0, max: 100, now: Math.round(p.level.progress * 100) }}
-            >
-              <View testID="level-bar" style={[styles.bar, { width: `${Math.round(p.level.progress * 100)}%` }]} />
-            </View>
-            <Text style={[type.caption, styles.center]}>{levelHint(p.level)}</Text>
+            <Text style={s.pointsWord}>points</Text>
           </View>
+          <Pill label={`Level ${p.level.number} · ${p.level.name}`} testID="level-pill" />
+        </View>
 
-          <View style={styles.tiles}>
-            <StatTile small value={p.items_this_week.toLocaleString()} label="items this week" />
-            <StatTile small value={plural(p.current_streak, "day")} label="streak" />
-            <StatTile small value={p.rank ? `#${p.rank}` : "–"} label={p.rank ? "in Ottawa" : "not ranked yet"} />
-          </View>
+        <ProgressBar value={p.level.progress} label="Progress to the next level" testID="level-bar" style={s.bar} />
+        <Text style={[type.caption, s.hint]}>{levelHint(p.level)}</Text>
 
-          {discover ? <DiscoverCard discover={discover} /> : null}
-        </ScrollView>
-      </SafeAreaView>
+        <View style={s.tiles}>
+          <StatTile small value={p.items_this_week.toLocaleString()} label="items this week" icon={Leaf} />
+          <StatTile small value={plural(p.current_streak, "day")} label="streak" icon={Flame} />
+          <StatTile small value={p.rank ? `#${p.rank}` : "–"} label={p.rank ? "in Ottawa" : "not ranked yet"} icon={Trophy} />
+        </View>
+
+        <DiscoverRows discover={discover} />
+      </HeroSheet>
+
       <PointsToast toast={toast} onHide={clearPointsToast} />
-    </View>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.xl, gap: spacing.md },
-
-  header: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.xs },
+const useStyles = makeStyles(({ colors }) => ({
+  // Above the plant, which can reach up behind the Up next card
+  top: { zIndex: 1, paddingHorizontal: layout.gutter, paddingTop: 4 },
+  header: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   headerText: { flex: 1 },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primarySoft, borderWidth: 2, borderColor: colors.primaryBorder, alignItems: "center", justifyContent: "center" },
-  avatarEmoji: { fontSize: 22 },
+  greeting: { fontFamily: fonts.medium, fontSize: 16, lineHeight: 21, color: colors.text },
+  upNext: { marginTop: 24, marginHorizontal: 10, marginBottom: 6 },
 
-  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.sm },
-  points: { fontFamily: fonts.extrabold, fontSize: 40, color: colors.text, textAlign: "center", marginTop: spacing.md },
-  center: { textAlign: "center" },
-  track: { height: 10, borderRadius: 5, backgroundColor: colors.track, overflow: "hidden", marginTop: spacing.sm },
-  bar: { height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  plantWrap: { position: "absolute", left: 0, right: 0, alignItems: "center" },
 
-  tiles: { flexDirection: "row", gap: spacing.sm },
-});
+  offline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
+  retry: { fontFamily: fonts.semibold, fontSize: 14, color: colors.terracotta, textDecorationLine: "underline" },
+
+  pointsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
+  points: { flexDirection: "row", alignItems: "baseline", gap: 8, flexShrink: 1 },
+  pointsWord: { fontFamily: fonts.medium, fontSize: 16, color: colors.textMuted },
+  bar: { marginTop: 10 },
+  hint: { marginTop: 12 },
+  tiles: { flexDirection: "row", gap: 11, marginTop: 16, marginBottom: 28 },
+}));

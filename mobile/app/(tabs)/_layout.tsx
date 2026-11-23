@@ -1,14 +1,16 @@
 import { Tabs } from "expo-router/js-tabs";
 
-import TabBar from "@/components/TabBar";
-import { colors } from "@/theme";
+import NavBar from "@/components/NavBar";
+import { useTheme } from "@/lib/theme";
 
-// Home, Board, [Scan], Wrapped, Me. Scan isn't a tab: TabBar draws it as the
-// raised centre button and opens app/scan.tsx.
+// Home, Board, [Scan], Wrapped, Me. Scan isn't a tab: NavBar draws it as
+// the big centre button and opens app/scan.tsx. The nav floats over the
+// screens, so each tab leaves room for it with useNavSpace().
 export default function TabsLayout() {
+  const { colors } = useTheme();
   return (
     <Tabs
-      tabBar={(props) => <TabBar {...props} />}
+      tabBar={(props) => <NavBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
     >
       <Tabs.Screen name="index" options={{ title: "Home" }} />

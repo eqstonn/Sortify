@@ -1,11 +1,12 @@
-"""GET /me and PATCH /me: everything the Home and Me screens show about a player."""
+"""GET /me and PATCH /me: everything the Home and Me screens show about a player.
+POST /me/avatar and DELETE /me/avatar: the profile photo."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.db import Database, get_db
 from app.deps import get_current_user
 from app.schemas import BadgeOut, ProfileOut, ProfileUpdate, Schedule, Weekday
-from app.services import badges, clock, levels, stats
+from app.services import badges, clock, images, levels, stats
 
 router = APIRouter(tags=["profile"])
 
@@ -71,4 +72,39 @@ def update_me(
     changes = body.model_dump(exclude_none=True, mode="json")  # mode="json" turns Avatar.FOX into "fox"
     if changes:
         db.update_profile(user_id, changes)
+    return build_profile(db, user_id)
+
+
+MAX_PHOTO_BYTES = 10 * 1024 * 1024
+DEFAULT_AVATAR = "sprout"  # the profiles.avatar default; the app shows the grey default person for it
+
+
+@router.post("/me/avatar", response_model=ProfileOut)
+def upload_avatar(
+    image: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+    db: Database = Depends(get_db),
+):
+    """Set a profile photo. It's cropped square, shrunk and has its location removed before it's saved."""
+    get_profile_or_404(db, user_id)
+    data = image.file.read(MAX_PHOTO_BYTES + 1)
+    if not data:
+        raise HTTPException(400, "Empty image")
+    if len(data) > MAX_PHOTO_BYTES:
+        raise HTTPException(413, "Image is too big (max 10 MB)")
+    try:
+        photo = images.prepare_avatar(data)
+    except images.InvalidImage as e:
+        raise HTTPException(400, str(e))
+    db.update_profile(user_id, {"avatar": db.upload_avatar(user_id, photo)})
+    return build_profile(db, user_id)
+
+
+@router.delete("/me/avatar", response_model=ProfileOut)
+def remove_avatar(user_id: str = Depends(get_current_user), db: Database = Depends(get_db)):
+    """Back to the default picture."""
+    profile = get_profile_or_404(db, user_id)
+    if profile["avatar"].startswith("http"):
+        db.delete_avatar(user_id)
+    db.update_profile(user_id, {"avatar": DEFAULT_AVATAR})
     return build_profile(db, user_id)

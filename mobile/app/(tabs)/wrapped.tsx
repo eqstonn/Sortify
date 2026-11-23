@@ -3,13 +3,16 @@
 
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Text } from "react-native";
 
+import ActionButton from "@/components/ActionButton";
 import Placeholder from "@/components/Placeholder";
+import { Loading } from "@/components/ScreenState";
 import WrappedStory from "@/components/WrappedStory";
 import { api, ApiError, type WrappedOut } from "@/lib/api";
+import { makeStyles, useTheme } from "@/lib/theme";
 import { monthName, wrappedMonths } from "@/lib/wrapped";
-import { colors, fonts, spacing, type } from "@/theme";
+import { spacing } from "@/theme";
 
 type Status =
   | { state: "loading" }
@@ -19,6 +22,8 @@ type Status =
 
 export default function Wrapped() {
   const [status, setStatus] = useState<Status>({ state: "loading" });
+  const { type } = useTheme();
+  const s = useStyles();
 
   const load = useCallback(async () => {
     setStatus({ state: "loading" }); // also sends the story back to card 1
@@ -43,13 +48,7 @@ export default function Wrapped() {
 
   if (status.state === "ok") return <WrappedStory data={status.data} onClose={() => router.navigate("/")} />;
 
-  if (status.state === "loading") {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
+  if (status.state === "loading") return <Loading />;
 
   if (status.state === "empty") {
     return (
@@ -62,15 +61,11 @@ export default function Wrapped() {
   return (
     <Placeholder eyebrow="Sortify Wrapped" title="Couldn't load your Wrapped">
       <Text style={type.body}>{status.message}</Text>
-      <Pressable onPress={load} accessibilityRole="button" style={styles.retry}>
-        <Text style={styles.retryText}>Try again</Text>
-      </Pressable>
+      <ActionButton label="Try again" onPress={load} style={s.retry} />
     </Placeholder>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  retry: { alignSelf: "flex-start", marginTop: spacing.sm, paddingVertical: spacing.sm },
-  retryText: { fontFamily: fonts.bold, fontSize: 15, color: colors.primary },
-});
+const useStyles = makeStyles(() => ({
+  retry: { marginTop: spacing.sm },
+}));

@@ -298,6 +298,19 @@ async function request<T>(path: string, { method = "GET", body, auth = true }: O
   return data as T;
 }
 
+/** A form with the photo at `uri` as its "image" part, the way the backend's uploads expect it. */
+async function photoForm(uri: string): Promise<FormData> {
+  const form = new FormData();
+  if (Platform.OS === "web") {
+    // On web the uri is a blob: URL, so send the actual file
+    form.append("image", await (await fetch(uri)).blob(), "photo.jpg");
+  } else {
+    // Expo's fetch can't send React Native's { uri, name, type } parts, only real files
+    form.append("image", new File(uri));
+  }
+  return form;
+}
+
 // ---------- endpoints ----------
 
 export const api = {
@@ -313,14 +326,7 @@ export const api = {
 
   /** Send a photo (a file uri from the camera or gallery). Location is optional, for drop-offs. */
   classify: async (photoUri: string, location?: { lat: number; lon: number }) => {
-    const form = new FormData();
-    if (Platform.OS === "web") {
-      // On web the uri is a blob: URL, so send the actual file
-      form.append("image", await (await fetch(photoUri)).blob(), "photo.jpg");
-    } else {
-      // Expo's fetch can't send React Native's { uri, name, type } parts, only real files
-      form.append("image", new File(photoUri));
-    }
+    const form = await photoForm(photoUri);
     if (location) {
       form.append("lat", String(location.lat));
       form.append("lon", String(location.lon));
@@ -342,6 +348,13 @@ export const api = {
   me: () => request<ProfileOut>("/me"),
 
   updateMe: (body: ProfileUpdate) => request<ProfileOut>("/me", { method: "PATCH", body }),
+
+  /** A new profile photo (file uri). The backend crops it square, shrinks it and removes its location. */
+  uploadAvatar: async (photoUri: string) =>
+    request<ProfileOut>("/me/avatar", { method: "POST", body: await photoForm(photoUri) }),
+
+  /** Back to the default picture. */
+  removeAvatar: () => request<ProfileOut>("/me/avatar", { method: "DELETE" }),
 
   /** The "Up next" banner, or null if the player hasn't set a pickup day yet. */
   nextPickup: async () => {

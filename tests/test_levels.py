@@ -6,7 +6,7 @@ from app.services.levels import LEVELS, level_for
 def test_zero_points_is_the_first_level():
     level = level_for(0)
     assert level.number == 1
-    assert level.name == "Seed"
+    assert level.name == "Sprout"
     assert level.progress == 0
     assert level.points_to_next == 50
 
@@ -30,18 +30,32 @@ def test_reaching_a_threshold_levels_up(index):
     assert level.min_points == needed
 
 
+def test_four_levels_one_per_plant_stage():
+    # The app has 4 plant stages (mobile/assets/plant/stage-1..4), one per level
+    assert LEVELS == [(0, "Sprout"), (50, "Seedling"), (100, "Sapling"), (200, "Young Tree")]
+
+
 def test_progress_halfway():
-    level = level_for(225)  # Seedling is 150-300
+    level = level_for(75)  # Seedling is 50-100
     assert level.name == "Seedling"
     assert level.next_name == "Sapling"
     assert level.progress == 0.5
-    assert level.points_to_next == 75
+    assert level.points_to_next == 25
 
 
-def test_sapling_grows_into_young_tree():
-    assert level_for(599).name == "Sapling"
-    assert level_for(599).next_name == "Young Tree"
-    assert level_for(600).name == "Young Tree"
+def test_a_sapling_on_its_way_to_young_tree():
+    level = level_for(160)
+    assert (level.number, level.name) == (3, "Sapling")
+    assert level.next_name == "Young Tree"
+    assert level.points_to_next == 40
+    assert level.progress == 0.6
+
+
+def test_young_tree_is_the_top():
+    assert level_for(199).name == "Sapling"
+    level = level_for(200)
+    assert (level.number, level.name) == (4, "Young Tree")
+    assert level.next_name is None
 
 
 def test_top_level_has_no_next():

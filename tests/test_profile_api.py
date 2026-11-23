@@ -48,7 +48,7 @@ def test_new_player(client, auth):
     body = me(client, auth)
     assert body["name"] == "Recycler"
     assert body["total_points"] == 0
-    assert body["level"]["name"] == "Seed"
+    assert body["level"]["name"] == "Sprout"
     assert body["items_sorted"] == 0
     assert body["current_streak"] == 0
     assert body["longest_streak"] == 0
@@ -93,11 +93,12 @@ def test_pending_scans_dont_count(client, db, auth):
 
 
 def test_level_comes_from_points(client, db, auth):
-    db.add_confirmed_scan("alice", "battery", 160, days_ago(0))
+    db.add_confirmed_scan("alice", "battery", 60, days_ago(0))
     level = me(client, auth)["level"]
+    assert level["number"] == 2
     assert level["name"] == "Seedling"
     assert level["next_name"] == "Sapling"
-    assert level["points_to_next"] == 140
+    assert level["points_to_next"] == 40
 
 
 def test_streaks(client, db, auth):

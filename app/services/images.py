@@ -29,3 +29,20 @@ def prepare_image(data: bytes, max_side: int = MAX_SIDE) -> bytes:
             return out.getvalue()
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as e:
         raise InvalidImage("That file isn't an image we can read.") from e
+
+
+AVATAR_SIDE = 512  # profile photos show at most ~90 pt wide
+
+
+def prepare_avatar(data: bytes) -> bytes:
+    """A profile photo: the centre square, 512 x 512, as a JPEG with no EXIF (so no location)."""
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            img = ImageOps.exif_transpose(img).convert("RGB")
+            # Crop to the middle square and scale it, like a round avatar shows it
+            img = ImageOps.fit(img, (AVATAR_SIDE, AVATAR_SIDE))
+            out = io.BytesIO()
+            img.save(out, format="JPEG", quality=JPEG_QUALITY)
+            return out.getvalue()
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as e:
+        raise InvalidImage("That file isn't an image we can read.") from e

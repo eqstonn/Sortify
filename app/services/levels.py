@@ -3,15 +3,13 @@
 from app.schemas import Level
 
 # (points needed, name). The first level must start at 0.
+# One level per plant stage in the app (mobile/assets/plant/stage-1..4), so 4 levels.
+# Kept low on purpose so the plant visibly grows during a demo.
 LEVELS = [
-    (0, "Seed"),
-    (50, "Sprout"),
-    (150, "Seedling"),
-    (300, "Sapling"),
-    (600, "Young Tree"),
-    (1000, "Tree"),
-    (2000, "Old Oak"),
-    (4000, "Forest"),
+    (0, "Sprout"),
+    (50, "Seedling"),
+    (100, "Sapling"),
+    (200, "Young Tree"),
 ]
 
 

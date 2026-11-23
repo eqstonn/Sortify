@@ -14,9 +14,10 @@ class FakeDB:
         self.scans: dict[str, dict] = {}
         self.badges: dict[tuple[str, str], datetime] = {}  # (user id, badge id) -> earned at
         self.emails: dict[str, str] = {}  # user id -> email, for logins made by find_or_create_user
+        self.avatars: dict[str, bytes] = {}  # user id -> the saved profile photo (the Storage bucket)
 
     def add_user(self, user_id: str, token: str, name: str = "Recycler") -> dict:
-        """Like a player signing in anonymously. Returns headers for that player."""
+        """Like a player who has signed in (email or Google). Returns headers for that player."""
         self.tokens[token] = user_id
         self.profiles[user_id] = {
             "id": user_id,
@@ -103,6 +104,13 @@ class FakeDB:
     def update_profile(self, user_id, changes):
         self.profiles[user_id].update(changes)
         return dict(self.profiles[user_id])
+
+    def upload_avatar(self, user_id, photo):
+        self.avatars[user_id] = photo
+        return f"https://storage.test/avatars/{user_id}.jpg?v={len(photo)}"
+
+    def delete_avatar(self, user_id):
+        self.avatars.pop(user_id, None)
 
     def leaderboard(self, period, limit):
         return self._leaderboard_rows(period)[:limit]

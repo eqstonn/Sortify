@@ -1,125 +1,106 @@
-// First launch: pick a name and avatar. Behind the scenes the player is an
-// anonymous Supabase user; this just names them for the leaderboard.
+// Sign in with email + password or Google (assets/redesign "Sign in").
+// "Forgot password?" emails a reset link to the address typed above.
+// Once Supabase says you're in, lib/session.tsx switches the app to Home.
 
+import { router } from "expo-router";
+import { Mail } from "lucide-react-native";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View } from "react-native";
 
-import AvatarPicker from "@/components/AvatarPicker";
-import type { Avatar } from "@/lib/api";
-import { AVATARS } from "@/lib/avatars";
+import ActionButton from "@/components/ActionButton";
+import AuthLayout, { Checkbox, EMAIL, Footer, FormMessage, OrDivider, PasswordField, TextLink } from "@/components/AuthLayout";
+import TextField from "@/components/TextField";
+import { remembers } from "@/lib/authStorage";
 import { useSession } from "@/lib/session";
-import { colors, fonts, radius, spacing, type } from "@/theme";
+import { sendPasswordReset, signInWithEmail, signInWithGoogle } from "@/lib/supabase";
+import { makeStyles } from "@/lib/theme";
 
-const MAX_NAME = 30; // same limit as ProfileUpdate in app/schemas.py
+type Busy = null | "email" | "google" | "reset";
 
 export default function SignIn() {
-  const { signIn } = useSession();
-  const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState<Avatar>("sprout");
-  const [busy, setBusy] = useState(false);
+  const { notice, clearNotice } = useSession();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(remembers);
+  const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const s = useStyles();
 
-  const ready = name.trim().length > 0 && !busy;
-
-  const submit = async () => {
-    if (!ready) return;
-    setBusy(true);
+  // Runs one action with its spinner, showing its error (or the good news it returns)
+  const run = async (which: Busy, action: () => Promise<string | null | void>) => {
+    if (busy) return;
+    setBusy(which);
     setError(null);
+    setInfo(null);
+    clearNotice();
     try {
-      await signIn(name, avatar); // the layout then swaps this screen for Home
+      const news = await action();
+      if (news) setInfo(news);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't sign in. Try again.");
-      setBusy(false);
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
     }
   };
 
+  const signIn = () =>
+    run("email", async () => {
+      if (!EMAIL.test(email.trim())) throw new Error("Type the email you signed up with.");
+      if (!password) throw new Error("Type your password.");
+      await signInWithEmail(email, password, remember);
+    });
+
+  const forgot = () =>
+    run("reset", async () => {
+      if (!EMAIL.test(email.trim())) throw new Error("Type your email above first, then tap Forgot password.");
+      await sendPasswordReset(email);
+      return `We sent a link to ${email.trim()}. Open it on this device to choose a new password.`;
+    });
+
+  const google = () =>
+    run("google", async () => {
+      await signInWithGoogle(remember);
+    });
+
   return (
-    <SafeAreaView style={styles.screen}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.hero}>{AVATARS[avatar]}</Text>
-          <Text style={type.caption}>Welcome to Sortify</Text>
-          <Text style={[type.title, styles.title]}>What should we call you?</Text>
-          <Text style={type.caption}>Your name and avatar show on the Ottawa leaderboard.</Text>
+    <AuthLayout title="Welcome back" subtitle="Sign in to keep your garden growing" testID="sign-in-scroll">
+      <View style={s.fields}>
+        <TextField
+          label="Email"
+          icon={Mail}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          textContentType="emailAddress"
+          returnKeyType="next"
+        />
+        <PasswordField label="Password" value={password} onChangeText={setPassword} placeholder="Your password" onSubmitEditing={signIn} />
+      </View>
 
-          <View style={styles.card}>
-            <Text style={type.label}>NAME</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. Sam"
-              placeholderTextColor={colors.textMuted}
-              maxLength={MAX_NAME}
-              autoCapitalize="words"
-              autoCorrect={false}
-              returnKeyType="done"
-              onSubmitEditing={submit}
-              style={styles.input}
-              accessibilityLabel="Your name"
-            />
-          </View>
+      <View style={s.row}>
+        <Checkbox label="Remember me" checked={remember} onChange={setRemember} />
+        <TextLink label="Forgot password?" onPress={forgot} disabled={!!busy} />
+      </View>
 
-          <View style={styles.card}>
-            <Text style={type.label}>AVATAR</Text>
-            <AvatarPicker value={avatar} onChange={setAvatar} />
-          </View>
+      <ActionButton label="Sign in" onPress={signIn} busy={busy === "email"} style={s.signIn} />
+      <FormMessage text={error ?? notice} tone="error" />
+      <FormMessage text={info} tone="info" />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-        </ScrollView>
+      <OrDivider />
+      <ActionButton variant="secondary" label="Google" accessibilityLabel="Continue with Google" onPress={google} busy={busy === "google"} />
 
-        <Pressable
-          onPress={submit}
-          disabled={!ready}
-          style={({ pressed }) => [styles.button, !ready && styles.buttonDisabled, pressed && { opacity: 0.85 }]}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !ready }}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={styles.buttonText}>Start sorting</Text>
-          )}
-        </Pressable>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <Footer text="New to Sortify?" link="Create an account" onPress={() => router.push("/sign-up")} />
+    </AuthLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.xl, gap: spacing.md },
-  hero: { fontSize: 56, marginBottom: spacing.sm },
-  title: { marginTop: -spacing.sm },
-  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
-  input: {
-    fontFamily: fonts.semibold,
-    fontSize: 18,
-    color: colors.text,
-    backgroundColor: colors.background,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  error: { ...type.body, color: colors.danger },
-  button: {
-    margin: spacing.xl,
-    marginTop: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: "center",
-  },
-  buttonDisabled: { opacity: 0.45 },
-  buttonText: { fontFamily: fonts.bold, fontSize: 17, color: colors.onPrimary },
-});
+const useStyles = makeStyles(() => ({
+  fields: { gap: 18 },
+  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24 },
+  signIn: { marginTop: 24, minHeight: 56 },
+}));

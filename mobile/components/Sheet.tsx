@@ -1,32 +1,39 @@
-// A white panel that slides up from the bottom, for small forms (pickup day, edit profile).
+// A cream panel that slides up from the bottom over a dimmed screen, for small
+// forms and details (pickup day, edit profile, a Discover item).
+// For the panel that's part of a page (Home, Board), see SheetPanel.
 
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors, radius, spacing, type } from "@/theme";
+import SheetPanel from "@/components/SheetPanel";
+import { makeStyles, useTheme } from "@/lib/theme";
+import { layout, spacing } from "@/theme";
 
 type Props = { visible: boolean; title: string; onClose: () => void; children: ReactNode };
 
 export default function Sheet({ visible, title, onClose, children }: Props) {
   const insets = useSafeAreaInsets();
+  const { type } = useTheme();
+  const s = useStyles();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]}>
-          <View style={styles.handle} />
-          <Text style={type.title}>{title}</Text>
-          {children}
-        </View>
+      <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel="Close" />
+        <SheetPanel style={[s.sheet, { paddingBottom: spacing.xl + insets.bottom }]}>
+          <ScrollView contentContainerStyle={s.content} bounces={false} keyboardShouldPersistTaps="handled">
+            <Text style={type.heading}>{title}</Text>
+            {children}
+          </ScrollView>
+        </SheetPanel>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
-  fill: { flex: 1, justifyContent: "flex-end" },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,0,0,0.35)" },
-  sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.xl, gap: spacing.md },
-  handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: colors.primaryBorder, marginBottom: spacing.sm },
-});
+const useStyles = makeStyles(({ colors }) => ({
+  fill: { flex: 1, justifyContent: "flex-end", alignItems: "center" },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: colors.overlay },
+  sheet: { width: "100%", maxWidth: layout.maxContent, maxHeight: "85%" },
+  content: { gap: spacing.md },
+}));

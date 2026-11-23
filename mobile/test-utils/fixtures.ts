@@ -8,6 +8,7 @@ import type {
   LeaderboardOut,
   NextPickup,
   ProfileOut,
+  ScanOut,
   WrappedOut,
 } from "@/lib/api";
 
@@ -37,7 +38,8 @@ export function fakeProfile(overrides: Partial<ProfileOut> = {}): ProfileOut {
     name: "Sam",
     avatar: "fox",
     total_points: 1240,
-    level: { number: 3, name: "Sapling", min_points: 1000, next_name: "Young Tree", next_at: 2500, points_to_next: 1260, progress: 0.16 },
+    // The mockup's level (the real thresholds are in app/services/levels.py)
+    level: { number: 3, name: "Sapling", min_points: 800, next_name: "Young Tree", next_at: 1500, points_to_next: 260, progress: 0.629 },
     items_sorted: 42,
     kg_diverted: 3.2,
     items_this_week: 5,
@@ -127,6 +129,22 @@ export function fakePickup(overrides: Partial<NextPickup> = {}): NextPickup {
     bins: ["black_bin", "green_bin"],
     label: "Black + green bin · Tue, Nov 3",
     holiday: null,
+    ...overrides,
+  };
+}
+
+export function fakeScan(overrides: Partial<ScanOut> = {}): ScanOut {
+  return {
+    id: "s1",
+    category_id: "aluminum_can",
+    name: "Aluminum can",
+    item: "Coke can",
+    bin: "blue_bin",
+    corrected: false,
+    status: "confirmed",
+    points_awarded: 15,
+    created_at: "2026-10-04T15:59:00Z",
+    confirmed_at: "2026-10-04T16:00:00Z",
     ...overrides,
   };
 }

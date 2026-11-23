@@ -3,25 +3,33 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@expo-google-fonts/manrope": "^0.4.2",
+    "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/outfit": "^0.4.3",
     "@expo/vector-icons": "^15.0.2",
     "@supabase/supabase-js": "^2.118.0",
     "expo": "~58.0.19",
     "expo-asset": "~58.0.18",
+    "expo-blur": "~58.0.6",
     "expo-camera": "~58.0.13",
     "expo-constants": "~58.0.13",
     "expo-file-system": "~58.0.13",
     "expo-font": "~58.0.10",
+    "expo-image": "~58.0.18",
     "expo-image-picker": "~58.0.10",
+    "expo-linear-gradient": "~58.0.4",
     "expo-linking": "~58.0.14",
     "expo-router": "~58.0.26",
+    "expo-splash-screen": "~58.0.14",
     "expo-sqlite": "~58.0.14",
     "expo-status-bar": "~58.0.4",
+    "expo-web-browser": "~58.1.0",
+    "lucide-react-native": "^1.77.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
+    "react-native-svg": "15.16.0",
     "react-native-web": "^0.21.4"
   },
   "devDependencies": {
@@ -51,6 +59,7 @@
     },
     "setupFiles": [
       "<rootDir>/jest.setup.tsx"
-    ]
+    ],
+    "testTimeout": 15000
   }
 }
