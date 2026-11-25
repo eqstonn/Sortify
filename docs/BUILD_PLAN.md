@@ -1,6 +1,6 @@
 # Sortify build plan
 
-8 phases. Each one ends with something you can run and a `pytest` suite that passes. Gemini and Supabase are faked in tests, so tests are free, fast and offline. Every phase also has a manual check. Commit and push after each phase, and tick it off in `CLAUDE.md`.
+8 phases. Each one ends with something you can run and a `pytest` suite that passes. Gemini and Supabase are faked in tests, so tests are free, fast and offline. Every phase also has a manual check. Commit and push after each phase.
 
 Paths: backend code lives in `app/` (`app/routers/`, `app/services/`), data in `data/`, tests in `tests/`, the Expo app in `mobile/`.
 
