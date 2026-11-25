@@ -139,6 +139,31 @@ test("no connection becomes an ApiError with status 0", async () => {
   await expect(api.me()).rejects.toMatchObject({ status: 0, message: expect.stringContaining("Can't reach") });
 });
 
+test("a GET that fails once is tried again", async () => {
+  fetchMock.mockResolvedValueOnce(reply(500, undefined)).mockResolvedValueOnce(reply(200, { name: "Easton" }));
+
+  await expect(api.me()).resolves.toMatchObject({ name: "Easton" });
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+test("a dropped connection on a GET is tried again", async () => {
+  fetchMock.mockRejectedValueOnce(new TypeError("Network request failed")).mockResolvedValueOnce(reply(200, {}));
+
+  await api.leaderboard("week");
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+test("POSTs and 4xx errors aren't tried again", async () => {
+  fetchMock.mockResolvedValue(reply(500, undefined));
+  await expect(api.confirmScan("s1")).rejects.toMatchObject({ status: 500 });
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+
+  fetchMock.mockReset();
+  fetchMock.mockResolvedValue(reply(401, { detail: "Sign in first" }));
+  await expect(api.me()).rejects.toMatchObject({ status: 401 });
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
 test("nextPickup is null until a pickup day is set", async () => {
   fetchMock.mockResolvedValue(reply(404, { detail: "Set your pickup day first (PUT /me/schedule)" }));
 

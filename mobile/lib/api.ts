@@ -299,7 +299,27 @@ function baseUrl(): string {
 
 type Options = { method?: string; body?: unknown; auth?: boolean };
 
-async function request<T>(path: string, { method = "GET", body, auth = true }: Options = {}): Promise<T> {
+// A GET that hits a hiccup (the server or the connection dropped for a moment)
+// gets one more try, so a tab doesn't show an error that a second tap would fix.
+// Only GETs: sending a POST twice could do it twice.
+const RETRY_MS = 400;
+
+function worthRetrying(e: unknown): boolean {
+  return e instanceof ApiError && (e.status === 0 || e.status >= 500);
+}
+
+async function request<T>(path: string, options: Options = {}): Promise<T> {
+  if ((options.method ?? "GET") !== "GET") return send<T>(path, options);
+  try {
+    return await send<T>(path, options);
+  } catch (e) {
+    if (!worthRetrying(e)) throw e;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_MS));
+    return send<T>(path, options);
+  }
+}
+
+async function send<T>(path: string, { method = "GET", body, auth = true }: Options = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (auth) headers.Authorization = `Bearer ${await getAccessToken()}`;
 

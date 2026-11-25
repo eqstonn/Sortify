@@ -13,7 +13,7 @@ import { useTheme } from "@/lib/theme";
 // Then our Splash (same look) stays while the saved login is checked.
 SplashScreen.preventAutoHideAsync();
 
-const SPLASH_MS = 900;
+const SPLASH_MS = 2000;
 
 export default function RootLayout() {
   // Outfit for headings and numbers, DM Sans for body text (names match `fonts` in theme.ts)

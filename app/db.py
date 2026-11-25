@@ -8,6 +8,7 @@ import time
 from datetime import date, datetime
 from functools import lru_cache
 
+import httpx
 from fastapi import HTTPException
 from supabase import ClientOptions, create_client
 from supabase_auth.errors import AuthError
@@ -283,7 +284,18 @@ class Database:
 
 @lru_cache
 def _connect(url: str, key: str) -> Database:
-    options = ClientOptions(auto_refresh_token=False, persist_session=False)
+    # supabase-py talks HTTP/2 by default. Sharing one HTTP/2 connection between
+    # requests that run at the same time (Home asks for /me and /schedule/next
+    # together), or reusing it after Supabase closed it while idle, fails now and
+    # then with "Server disconnected", so a tab showed an error until you tapped it
+    # again. Plain HTTP/1.1 with a pool of connections doesn't have that problem.
+    # retries=1 tries a failed connect once more.
+    http = httpx.Client(
+        transport=httpx.HTTPTransport(retries=1),
+        timeout=httpx.Timeout(30, connect=10),
+        follow_redirects=True,
+    )
+    options = ClientOptions(auto_refresh_token=False, persist_session=False, httpx_client=http)
     return Database(create_client(url, key, options=options))
 
 
