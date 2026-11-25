@@ -15,6 +15,8 @@ Demo day? See [DEMO.md](DEMO.md).
 
 The look follows the mockups in `mobile/assets/redesign/` (light theme only).
 
+> **Note:** All art in `mobile/assets/` (mockups, plant stages, logo, app icons) is AI-generated placeholder art for the hackathon.
+
 ## 1. Set up Supabase (once)
 
 1. In the Supabase dashboard, open **SQL Editor**. Paste each file in `supabase/migrations/` and click **Run**, in order: `001_init.sql`, `002_schedule.sql`, `003_badges.sql`, `004_leaderboard_items.sql`, `005_auth.sql`. A missing migration shows up as a "Server error: Could not find the table…" message in the app.
