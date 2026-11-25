@@ -36,6 +36,9 @@ class Category(BaseModel):
     examples: list[str] = []
     # True when a teammate still needs to check this against ottawa.ca
     verify: bool = False
+    # Only your blue bin at home takes it (the 2026 additions: flexible plastic,
+    # foam, cups, tubes). Bins at school, work or in public take them as garbage.
+    home_only: bool = False
 
 
 class DropoffSite(BaseModel):
@@ -67,6 +70,7 @@ class Disposal(BaseModel):
     dropoff_type: DropoffType | None = None
     points: int
     tips: list[str]
+    home_only: bool = False  # only your blue bin at home takes it; garbage anywhere else
 
 
 class CategoryChoice(BaseModel):

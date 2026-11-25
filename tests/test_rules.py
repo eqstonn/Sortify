@@ -87,6 +87,26 @@ def test_recyclable_flag():
     assert rules.get_disposal("chip_bag").recyclable is True  # since January 2026
 
 
+@pytest.mark.parametrize(
+    "category_id", ["chip_bag", "plastic_bag_film", "polystyrene_foam", "coffee_cup", "tube"]
+)
+def test_2026_additions_are_home_blue_bin_only(category_id):
+    d = rules.get_disposal(category_id)
+    assert d.bin == Bin.BLUE
+    assert d.home_only is True
+
+
+def test_older_blue_bin_items_go_in_any_blue_bin():
+    assert rules.get_disposal("aluminum_can").home_only is False
+    assert rules.get_disposal("plastic_bottle").home_only is False
+
+
+def test_only_blue_bin_items_are_home_only():
+    for c in rules.load_categories().values():
+        if c.home_only:
+            assert c.bin == Bin.BLUE, c.id
+
+
 def test_unknown_category_is_safe():
     d = rules.get_disposal("definitely_not_a_category")
     assert d.bin == Bin.UNSURE

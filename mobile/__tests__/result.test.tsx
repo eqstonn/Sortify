@@ -65,6 +65,26 @@ test("shows the item, a blue card for the blue bin, and the prep steps", async (
   expect(await screen.findByText("Next pickup Tue, Oct 27")).toBeTruthy();
 });
 
+test("a 2026 blue bin item (chip bag) says only the blue bin at home takes it", async () => {
+  lastScan.set({
+    photoUri: "file:///photo.jpg",
+    result: fakeResult({ category_id: "chip_bag", name: "Chip or snack bag", material: "plastic", home_only: true }),
+  });
+
+  await render(<Result />);
+
+  expect(screen.getByText("Home blue bin only")).toBeTruthy();
+  expect(screen.getByText(/Away from home .* put it in the garbage/)).toBeTruthy();
+  await screen.findByText("Next pickup Tue, Oct 27"); // let the pickup line settle
+});
+
+test("blue bin items that go in any blue bin (cans) don't get the home-only note", async () => {
+  await render(<Result />);
+
+  expect(screen.queryByTestId("home-only")).toBeNull();
+  await screen.findByText("Next pickup Tue, Oct 27");
+});
+
 test("a black bin item on a blue week says it goes out the week after", async () => {
   lastScan.set({ photoUri: "file:///photo.jpg", result: fakeResult({ bin: "black_bin", name: "Cardboard" }) });
 

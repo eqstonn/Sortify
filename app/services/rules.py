@@ -91,6 +91,7 @@ def get_disposal(category_id: str) -> Disposal:
         dropoff_type=category.dropoff_type,
         points=category.points,
         tips=category.tips,
+        home_only=category.home_only,
     )
 
 

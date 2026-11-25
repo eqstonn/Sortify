@@ -5,7 +5,7 @@
 // backend on confirm; the app never works them out.
 
 import { router } from "expo-router";
-import { CameraIcon } from "lucide-react-native";
+import { CameraIcon, House } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-native";
 
@@ -157,6 +157,19 @@ export default function Result() {
           <BinCard bin={result.bin} detail={binDetail(result, pickup, dropoff)} />
         )}
 
+        {/* New in 2026 (chip bags, foam, cups...): only the blue bin at home takes them */}
+        {result.home_only && busy !== "correct" ? (
+          <GlassCard testID="home-only">
+            <View style={s.noteHeading}>
+              <House size={18} color={colors.text} strokeWidth={2} />
+              <Text style={type.heading}>Home blue bin only</Text>
+            </View>
+            <Text style={type.body}>
+              Your blue bin at home takes this since 2026. Away from home (school, work, public bins), put it in the garbage.
+            </Text>
+          </GlassCard>
+        ) : null}
+
         {result.needs_review && (
           <GlassCard style={s.reviewCard}>
             <Text style={type.heading}>{"We're not sure. Which item is it?"}</Text>
@@ -270,6 +283,7 @@ const useStyles = makeStyles(({ colors }) => ({
   itemName: { fontFamily: fonts.extrabold, fontSize: 22, lineHeight: 27, color: colors.text },
 
   centred: { alignItems: "center", justifyContent: "center", minHeight: 96 },
+  noteHeading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
 
   reviewCard: { borderColor: colors.gold },
   choice: {

@@ -27,7 +27,7 @@ Login: Supabase Auth with email + password or Google, and an optional profile ph
 
 Rules as of January 1, 2026, when Circular Materials took over the blue and black bins (still two bins: containers blue, fibre black).
 
-- **Blue bin:** glass bottles/jars, metal cans, foil, aerosol cans (no hazard symbols), plastic bottles/tubs/jugs, cartons; new in 2026: flexible plastic (chip bags, wrappers, plastic bags, bubble wrap, film), foam packaging (takeout containers, cups, meat trays), paper coffee cups, tubes
+- **Blue bin:** glass bottles/jars, metal cans, foil, aerosol cans (no hazard symbols), plastic bottles/tubs/jugs, cartons; new in 2026: flexible plastic (chip bags, wrappers, plastic bags, bubble wrap, film), foam packaging (takeout containers, cups, meat trays), paper coffee cups, tubes. The 2026 additions are home blue bin only (`home_only` in categories.json; the result screen says so): away from home (school, work, public bins) they're garbage.
 - **Black bin:** paper, flattened cardboard, boxboard, paper bags
 - **Green bin:** food scraps, soiled paper, greasy pizza boxes
 - **Garbage:** plastic cutlery and straws, drinking glasses and ceramics, toys, diapers, books

@@ -34,6 +34,7 @@ export interface Category {
   tips: string[];
   examples: string[];
   verify: boolean;
+  home_only?: boolean; // only the blue bin at home takes it (the 2026 additions); garbage elsewhere
 }
 
 export interface DropoffSite {
@@ -61,6 +62,7 @@ export interface Disposal {
   dropoff_type: DropoffType | null;
   points: number;
   tips: string[];
+  home_only?: boolean; // only the blue bin at home takes it (chip bags, foam...); garbage elsewhere
 }
 
 /** POST /classify and POST /scans/{id}/correct: everything the result screen shows. */
