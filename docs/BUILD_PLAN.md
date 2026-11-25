@@ -129,7 +129,6 @@ Tests: Wrapped totals, top-5 order and rarest find from fixed fake scans; busies
 | `render.yaml` | Render deploy config |
 | `scripts/smoke_test.py` | Hits the live `/health` and `/classify` and prints pass or fail |
 | `README.md` | Local run, cloudflared, Render deploy |
-| `DEMO.md` | Demo script: which items to scan, in what order, backup plan |
 
 Tests: seeding twice makes no duplicates; fake players' points match their scans; smoke test passes against Render; full `pytest` passes.
 

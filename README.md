@@ -2,8 +2,6 @@
 
 Scan an item, find out which Ottawa bin it goes in, and earn points. Backend: FastAPI + Gemini + Supabase. App: Expo (React Native) in `mobile/`.
 
-Demo day? See [DEMO.md](DEMO.md).
-
 ## What's in the app
 
 - **Sign in:** email + password or Google (Supabase Auth), with Remember me and Forgot password. Optional profile photo.
